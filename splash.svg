@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" fill="#1a3a5c"/>
+  <rect x="392" y="200" width="240" height="624" rx="24" fill="white" opacity="0.9"/>
+  <rect x="200" y="392" width="624" height="240" rx="24" fill="white" opacity="0.9"/>
+  <circle cx="512" cy="512" r="120" fill="#1a3a5c"/>
+  <circle cx="512" cy="512" r="60" fill="#2563a8"/>
+  <text x="512" y="780" font-family="Arial" font-weight="bold" font-size="64" 
+        fill="white" text-anchor="middle">WNV SISP</text>
+  <text x="512" y="850" font-family="Arial" font-size="36" 
+        fill="white" opacity="0.7" text-anchor="middle">ASL Mediocampidano</text>
+</svg>

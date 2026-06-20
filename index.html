@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="WNV SISP">
+<meta name="theme-color" content="#1a3a5c">
+<meta name="description" content="Georeferenziazione WNV – SISP ASL Mediocampidano">
+<title>WNV SISP – ASL Mediocampidano</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f4ff; color: #374151; }
+
+  .header {
+    background: #1a3a5c; color: white;
+    padding: 12px 20px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .header h1 { font-size: 16px; font-weight: 700; }
+  .header p { font-size: 11px; opacity: 0.75; }
+
+  .layout { display: grid; grid-template-columns: 340px 1fr; height: calc(100vh - 54px); }
+
+  /* LEFT PANEL */
+  .panel {
+    background: white; border-right: 1px solid #e5e7eb;
+    overflow-y: auto; padding: 14px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+
+  .section-title {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; color: #6b7280; margin-bottom: 6px;
+  }
+
+  .card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px; }
+
+  label { font-size: 11px; font-weight: 600; color: #374151; display: block; margin-bottom: 3px; }
+  input, select {
+    width: 100%; padding: 7px 10px; border: 1px solid #d1d5db;
+    border-radius: 5px; font-size: 12px; background: white;
+  }
+  input:focus, select:focus { outline: 2px solid #2563a8; }
+
+  .coord-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  .btn {
+    padding: 9px 14px; border: none; border-radius: 6px;
+    font-size: 12px; font-weight: 700; cursor: pointer;
+    width: 100%; transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn-primary { background: #1a3a5c; color: white; }
+  .btn-secondary { background: #e5e7eb; color: #374151; }
+  .btn-danger { background: #ef4444; color: white; }
+  .btn-green { background: #15803d; color: white; }
+
+  .scenario-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .scenario-btn {
+    padding: 7px 8px; border-radius: 5px; border: 2px solid transparent;
+    font-size: 11px; font-weight: 600; cursor: pointer; text-align: center;
+    transition: all 0.15s;
+  }
+
+  .buffer-legend { display: flex; flex-direction: column; gap: 4px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+  .legend-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+
+  .comuni-list { max-height: 180px; overflow-y: auto; }
+  .comune-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px; border-radius: 4px; font-size: 11px;
+    margin: 2px; font-weight: 600;
+  }
+  .tag-esposizione { background: #fee2e2; color: #991b1b; }
+  .tag-larvicida { background: #dcfce7; color: #14532d; }
+  .tag-adulticida { background: #ede9fe; color: #5b21b6; }
+  .tag-allerta { background: #fef3c7; color: #92400e; }
+
+  .adempimenti-list { font-size: 11px; }
+  .adempimento {
+    padding: 5px 8px; margin-bottom: 4px; border-radius: 4px;
+    border-left: 3px solid #d1d5db; background: #f9fafb;
+    line-height: 1.4;
+  }
+  .adempimento.urgente { border-left-color: #ef4444; background: #fff5f5; color: #991b1b; font-weight: 600; }
+  .adempimento.standard { border-left-color: #2563a8; }
+
+  .info-box {
+    padding: 8px 10px; border-radius: 5px; font-size: 11px; line-height: 1.5;
+  }
+  .info-orange { background: #fef9ec; border: 1px solid #d97706; color: #92400e; }
+  .info-blue { background: #eff6ff; border: 1px solid #3b82f6; color: #1e40af; }
+  .info-red { background: #fff5f5; border: 1px solid #ef4444; color: #991b1b; }
+
+  #map { width: 100%; height: 100%; }
+
+  .geocode-row { display: flex; gap: 6px; }
+  .geocode-row input { flex: 1; }
+  .geocode-row button { white-space: nowrap; padding: 7px 10px; font-size: 11px; font-weight: 600;
+    background: #2563a8; color: white; border: none; border-radius: 5px; cursor: pointer; }
+
+  .tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+  .tab { padding: 5px 10px; font-size: 11px; font-weight: 600; border: none;
+    border-radius: 4px; cursor: pointer; background: #e5e7eb; color: #6b7280; }
+  .tab.active { background: #1a3a5c; color: white; }
+
+  .badge { display: inline-block; padding: 1px 6px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+
+  /* ── PWA / iOS SPECIFICO ─────────────────────────────── */
+  :root {
+    --sat: env(safe-area-inset-top);
+    --sar: env(safe-area-inset-right);
+    --sab: env(safe-area-inset-bottom);
+    --sal: env(safe-area-inset-left);
+  }
+  body { padding-top: var(--sat); }
+  .header { padding-top: calc(12px + var(--sat)); }
+
+  /* Touch targets minimi 44pt per iOS HIG */
+  .btn { min-height: 44px; }
+  .tab { min-height: 36px; }
+  .scenario-btn { min-height: 40px; }
+  button { -webkit-tap-highlight-color: transparent; }
+
+  /* Scroll momentum su iOS */
+  .panel, .comuni-list, .adempimenti-list { -webkit-overflow-scrolling: touch; }
+
+  /* Layout responsive: stack su schermi piccoli */
+  @media (max-width: 700px) {
+    .layout { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+    .panel { max-height: 55vh; border-right: none; border-bottom: 1px solid #e5e7eb; }
+    #map { height: 45vh; }
+    .header h1 { font-size: 14px; }
+    .scenario-grid { grid-template-columns: 1fr 1fr; }
+    .coord-row { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 400px) {
+    .scenario-grid { grid-template-columns: 1fr; }
+    .panel { padding: 10px; }
+  }
+
+  /* Splash screen offline */
+  #offlineBanner {
+    display: none; position: fixed; top: 0; left: 0; right: 0;
+    background: #b45309; color: white;
+    padding: 8px 16px; font-size: 12px; font-weight: 600;
+    text-align: center; z-index: 9999;
+  }
+
+  /* Install prompt */
+  #installBanner {
+    display: none; background: #f0fdf4; border-bottom: 1px solid #86efac;
+    padding: 8px 14px; font-size: 12px; color: #14532d;
+    align-items: center; gap: 10px;
+  }
+  #installBanner button {
+    background: #15803d; color: white; border: none;
+    border-radius: 5px; padding: 6px 12px; font-size: 11px;
+    font-weight: 700; cursor: pointer; white-space: nowrap;
+  }
+
+</style>
+</head>
+<body>
+
+
+<div id="offlineBanner">⚠ Modalità offline – La mappa potrebbe non essere disponibile. I dati e le funzioni operative funzionano normalmente.</div>
+<div id="installBanner" style="display:flex">
+  <span style="flex:1">📱 Installa WNV SISP sulla schermata Home per usarla offline</span>
+  <button onclick="installPWA()">Installa</button>
+  <button onclick="document.getElementById('installBanner').style.display='none'" 
+          style="background:#6b7280;margin-left:6px">✕</button>
+</div>
+
+<div class="header">
+  <div>
+    <h1>🗺️ WNV Georeferenziazione – Buffer e Comuni coinvolti</h1>
+    <p>SISP ASL Mediocampidano · PNA 2020-2025 · Piano Reg. WND/USUTU agg. 2026</p>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- LEFT PANEL -->
+  <div class="panel">
+
+    <!-- SCENARIO -->
+    <div>
+      <div class="section-title">1. Tipo di segnale / scenario</div>
+      <div class="scenario-grid" id="scenarioBtns"></div>
+    </div>
+
+    <!-- COORDINATE -->
+    <div>
+      <div class="section-title">2. Luogo di esposizione / segnale</div>
+      <div class="card">
+        <div style="margin-bottom:8px">
+          <label>Cerca per indirizzo (geocodifica)</label>
+          <div class="geocode-row">
+            <input type="text" id="addressInput" placeholder="es. Via Marmilla 5, Solarussa" />
+            <button onclick="geocodeAddress()">Cerca</button>
+          </div>
+          <div id="geocodeMsg" style="font-size:10px;color:#6b7280;margin-top:3px"></div>
+        </div>
+        <div style="font-size:10px;color:#9ca3af;text-align:center;margin:4px 0">oppure inserire coordinate manualmente</div>
+        <div class="coord-row">
+          <div>
+            <label>Latitudine</label>
+            <input type="number" id="latInput" step="0.0001" placeholder="39.5500" />
+          </div>
+          <div>
+            <label>Longitudine</label>
+            <input type="number" id="lonInput" step="0.0001" placeholder="8.9000" />
+          </div>
+        </div>
+        <div style="margin-top:8px">
+          <label>Descrizione luogo (opzionale)</label>
+          <input type="text" id="descInput" placeholder="es. Via Giovanni XXIII 7, Solarussa" />
+        </div>
+        <div style="margin-top:8px;display:flex;gap:6px">
+          <button class="btn btn-primary" style="flex:2" onclick="plotPoint()">📍 Georeferenzia</button>
+          <button id="gpsBtn" class="btn" style="flex:1;background:#0e7490;color:white" onclick="usaGPS()">📡 GPS</button>
+          <button class="btn btn-secondary" style="flex:1" onclick="clearAll()">✕</button>
+        </div>
+        <div class="info-blue" style="margin-top:8px;font-size:10px">
+          💡 Puoi anche cliccare direttamente sulla mappa per posizionare il punto
+        </div>
+      </div>
+    </div>
+
+    <!-- RISULTATI -->
+    <div id="risultatiPanel" style="display:none">
+      <div class="section-title">3. Comuni coinvolti per buffer</div>
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('comuni')">Comuni</button>
+        <button class="tab" onclick="switchTab('adempimenti')">Adempimenti</button>
+        <button class="tab" onclick="switchTab('legenda')">Buffer</button>
+      </div>
+
+
+      <div id="tabComuni">
+        <div id="comuniOutput" class="comuni-list"></div>
+      </div>
+      <div id="tabAdempimenti" style="display:none">
+        <div id="adempimentiOutput" class="adempimenti-list"></div>
+      </div>
+      <div id="tabLegenda" style="display:none">
+        <div class="buffer-legend" id="legendaOutput"></div>
+      </div>
+    </div>
+
+    <!-- NOTE -->
+    <div id="notePanel" style="display:none">
+      <div class="info-orange" id="noteOutput"></div>
+    </div>
+
+    <!-- EXPORT -->
+    <div id="exportPanel" style="display:none">
+      <div class="section-title">4. Esporta per QGIS / GIS</div>
+      <div class="card" style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-size:10px;color:#6b7280;line-height:1.5;margin-bottom:2px">
+          Esporta il punto di esposizione, i buffer e i Comuni coinvolti in formato GIS.<br/>
+          In QGIS: <b>Layer → Aggiungi layer → Aggiungi layer vettoriale</b> → seleziona il file.
+        </div>
+        <button class="btn btn-green" onclick="esportaGeoJSON()">
+          ⬇ Scarica GeoJSON (QGIS / ArcGIS / GRASS)
+        </button>
+        <button class="btn" style="background:#e55300;color:white" onclick="esportaKML()">
+          ⬇ Scarica KML (Google Earth / QGIS)
+        </button>
+        <button class="btn" style="background:#0369a1;color:white" onclick="esportaCSV()">
+          ⬇ Scarica CSV coordinate (Excel / QGIS)
+        </button>
+        <div class="info-blue" style="font-size:10px;margin-top:2px">
+          💡 Il GeoJSON contiene: punto esposizione, 4 cerchi buffer (poligoni 64 vertici),
+          layer comuni coinvolti con PEC, distanza e categoria buffer.
+          Proiezione: WGS84 (EPSG:4326).
+        </div>
+        <div style="margin-top:6px;padding:8px;background:#f5f3ff;border:1px solid #7c3aed;border-radius:5px;font-size:10px;color:#5b21b6">
+          📱 <b>Installare su iPhone:</b> Aprire in Safari → toccare 
+          <b>Condividi (□↑)</b> → <b>Aggiungi a schermata Home</b> → <b>Aggiungi</b>.
+          Funziona offline dopo la prima apertura.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MAP -->
+  <div id="map"></div>
+</div>
+
+<script>
+// ── DATI COMUNI ───────────────────────────────────────────────────────────
+const COMUNI = [
+  { nome:"Arbus",              lat:39.5314, lon:8.5947,  dist:"Guspini",  pec:"protocollo.arbus@pec.comunas.it" },
+  { nome:"Barumini",           lat:39.7056, lon:9.0011,  dist:"Sanluri",  pec:"segreteria.barumini@pec.comunas.it" },
+  { nome:"Collinas",           lat:39.6369, lon:8.8897,  dist:"Sanluri",  pec:"info@pec.comune.collinas.vs.it" },
+  { nome:"Furtei",             lat:39.5614, lon:8.9781,  dist:"Sanluri",  pec:"protocollo@pec.comune.furtei.ca.it" },
+  { nome:"Genuri",             lat:39.6692, lon:8.9017,  dist:"Sanluri",  pec:"protocollo.genuri@pec.comunas.it" },
+  { nome:"Gesturi",            lat:39.7181, lon:9.0433,  dist:"Sanluri",  pec:"amministrazione.gesturi@pec.it" },
+  { nome:"Gonnosfanadiga",     lat:39.4958, lon:8.6578,  dist:"Guspini",  pec:"protocollo.gonnosfanadiga@servizipostacert.it" },
+  { nome:"Guspini",            lat:39.5400, lon:8.6289,  dist:"Guspini",  pec:"protocollo@pec.comune.guspini.vs.it" },
+  { nome:"Las Plassas",        lat:39.6678, lon:8.9617,  dist:"Sanluri",  pec:"protocollo.lasplassas@pec.comunas.it" },
+  { nome:"Lunamatrona",        lat:39.6419, lon:8.9325,  dist:"Sanluri",  pec:"protocollo@pec.comune.lunamatrona.ca.it" },
+  { nome:"Pabillonis",         lat:39.5922, lon:8.7350,  dist:"Guspini",  pec:"comune.pabillonis@postemailcertificata.it" },
+  { nome:"Pauli Arbarei",      lat:39.6531, lon:8.9697,  dist:"Sanluri",  pec:"comune.pauliarbarei@pec.it" },
+  { nome:"Samassi",            lat:39.4822, lon:8.9017,  dist:"Sanluri",  pec:"protocollo@pec.comune.samassi.ca.it" },
+  { nome:"San Gavino Monreale",lat:39.5511, lon:8.7917,  dist:"Guspini",  pec:"protocollo.sangavino@pec.comunas.it" },
+  { nome:"Sanluri",            lat:39.5592, lon:8.8978,  dist:"Sanluri",  pec:"protocollo@pec.comune.sanluri.vs.it" },
+  { nome:"Sardara",            lat:39.6197, lon:8.8183,  dist:"Guspini",  pec:"affarigenerali@pec.comune.sardara.vs.it" },
+  { nome:"Segariu",            lat:39.5458, lon:8.9475,  dist:"Sanluri",  pec:"protocollo@pec.comune.segariu.ca.it" },
+  { nome:"Serramanna",         lat:39.4231, lon:8.9211,  dist:"Sanluri",  pec:"area.amministrativa@pec.comune.serramanna.ca.it" },
+  { nome:"Serrenti",           lat:39.4961, lon:8.9883,  dist:"Sanluri",  pec:"protocollo.serrenti@pec.comunas.it" },
+  { nome:"Setzu",              lat:39.6919, lon:8.9528,  dist:"Sanluri",  pec:"protocollo@pec.comune.setzu.vs.it" },
+  { nome:"Siddi",              lat:39.6583, lon:8.9303,  dist:"Sanluri",  pec:"protocollo.siddi@servizipostacert.it" },
+  { nome:"Tuili",              lat:39.6983, lon:8.9703,  dist:"Sanluri",  pec:"protocollo.tuili@pec.comunas.it" },
+  { nome:"Turri",              lat:39.6972, lon:8.9242,  dist:"Sanluri",  pec:"protocollo.turri@pec.comunas.it" },
+  { nome:"Ussaramanna",        lat:39.6953, lon:8.9003,  dist:"Sanluri",  pec:"protocollo@pec.comune.ussaramanna.vs.it" },
+  { nome:"Villacidro",         lat:39.4567, lon:8.7378,  dist:"Guspini",  pec:"protocollo.villacidro@pec.it" },
+  { nome:"Villamar",           lat:39.6056, lon:8.9489,  dist:"Sanluri",  pec:"segreteria.villamar@legalmail.it" },
+  { nome:"Villanovaforru",     lat:39.6306, lon:8.9617,  dist:"Sanluri",  pec:"protocollo.villanovaforru@pec.comunas.it" },
+  { nome:"Villanovafranca",    lat:39.6483, lon:8.9822,  dist:"Sanluri",  pec:"protocollo@pec.comune.villanovafranca.ca.it" },
+];
+
+// ── SCENARI ───────────────────────────────────────────────────────────────
+const SCENARI = [
+  { id:"pool",      label:"🦟 Pool zanzare +",     color:"#0e7490", buffers:{ ento:200,  larv:500,  adult:0,    com:1000 }, adult_obblig:false, ordinanza:false },
+  { id:"uccello",   label:"🐦 Uccello morto +",    color:"#065f46", buffers:{ ento:500,  larv:1000, adult:0,    com:1000 }, adult_obblig:false, ordinanza:false },
+  { id:"equide",    label:"🐴 Equide infetto",     color:"#92400e", buffers:{ ento:500,  larv:500,  adult:0,    com:1000 }, adult_obblig:false, ordinanza:false },
+  { id:"febbre",    label:"🤒 Caso umano febbre",  color:"#1d4ed8", buffers:{ ento:200,  larv:500,  adult:500,  com:500  }, adult_obblig:false, ordinanza:false },
+  { id:"neuro",     label:"🧠 Caso neuroinvasivo", color:"#991b1b", buffers:{ ento:200,  larv:500,  adult:1000, com:2000 }, adult_obblig:true,  ordinanza:true  },
+  { id:"cluster",   label:"🔴 Cluster ≥2 casi",   color:"#7c3aed", buffers:{ ento:2000, larv:2000, adult:2000, com:2000 }, adult_obblig:true,  ordinanza:true  },
+];
+
+// ── STATO ─────────────────────────────────────────────────────────────────
+let currentScenario = SCENARI[3]; // default: caso umano febbre
+let marker = null;
+let circles = [];
+let comuniMarkers = [];
+let currentLat = null, currentLon = null;
+
+// ── MAPPA ─────────────────────────────────────────────────────────────────
+const map = L.map('map').setView([39.58, 8.87], 10);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors', maxZoom: 18
+}).addTo(map);
+
+// Aggiunge marker comuni sul layer separato
+const comuniLayer = L.layerGroup().addTo(map);
+COMUNI.forEach(c => {
+  const m = L.circleMarker([c.lat, c.lon], {
+    radius: 5, color: '#1a3a5c', fillColor: '#dbeafe',
+    fillOpacity: 0.9, weight: 1.5
+  }).addTo(comuniLayer)
+    .bindTooltip(`<b>${c.nome}</b><br/><small>${c.pec}</small>`, {permanent:false});
+});
+
+// Click su mappa per posizionare il punto
+map.on('click', function(e) {
+  document.getElementById('latInput').value = e.latlng.lat.toFixed(6);
+  document.getElementById('lonInput').value = e.latlng.lng.toFixed(6);
+  plotPoint();
+});
+
+// ── SCENARI BUTTONS ───────────────────────────────────────────────────────
+function renderScenarioBtns() {
+  const cont = document.getElementById('scenarioBtns');
+  cont.innerHTML = '';
+  SCENARI.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'scenario-btn';
+    btn.textContent = s.label;
+    btn.style.borderColor = s.color;
+    if (s.id === currentScenario.id) {
+      btn.style.background = s.color;
+      btn.style.color = 'white';
+    } else {
+      btn.style.background = 'white';
+      btn.style.color = s.color;
+    }
+    btn.onclick = () => { currentScenario = s; renderScenarioBtns(); if (currentLat) plotPoint(); };
+    cont.appendChild(btn);
+  });
+}
+renderScenarioBtns();
+
+// ── GEOCODIFICA ───────────────────────────────────────────────────────────
+async function geocodeAddress() {
+  const addr = document.getElementById('addressInput').value.trim();
+  if (!addr) return;
+  const msg = document.getElementById('geocodeMsg');
+  msg.textContent = 'Ricerca in corso...';
+
+  try {
+    const q = encodeURIComponent(addr + ', Sardegna, Italia');
+    const url = `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=it`;
+    const r = await fetch(url, { headers: { 'User-Agent': 'SISP-ASL-MedioCampidano/1.0' } });
+    const data = await r.json();
+    if (data && data.length > 0) {
+      document.getElementById('latInput').value = parseFloat(data[0].lat).toFixed(6);
+      document.getElementById('lonInput').value = parseFloat(data[0].lon).toFixed(6);
+      msg.textContent = `✓ Trovato: ${data[0].display_name.substring(0,60)}...`;
+      msg.style.color = '#15803d';
+      plotPoint();
+    } else {
+      msg.textContent = '⚠ Indirizzo non trovato. Inserire le coordinate manualmente.';
+      msg.style.color = '#b45309';
+    }
+  } catch(e) {
+    msg.textContent = '⚠ Errore geocodifica. Inserire le coordinate manualmente.';
+    msg.style.color = '#991b1b';
+  }
+}
+
+document.getElementById('addressInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') geocodeAddress();
+});
+
+// ── DISTANZA tra due punti (Haversine, metri) ─────────────────────────────
+function distanza(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const dLat = (lat2-lat1) * Math.PI/180;
+  const dLon = (lon2-lon1) * Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// ── PLOT POINT + BUFFER ───────────────────────────────────────────────────
+function plotPoint() {
+  const lat = parseFloat(document.getElementById('latInput').value);
+  const lon = parseFloat(document.getElementById('lonInput').value);
+  if (isNaN(lat) || isNaN(lon)) {
+    alert('Inserire coordinate valide (latitudine e longitudine).');
+    return;
+  }
+
+  currentLat = lat; currentLon = lon;
+  const desc = document.getElementById('descInput').value || 'Luogo di esposizione';
+  const sc = currentScenario;
+
+  // Rimuovi layers precedenti
+  clearLayers();
+
+  // Marker principale
+  const icon = L.divIcon({
+    html: `<div style="background:${sc.color};width:18px;height:18px;border-radius:50%;border:3px solid white;box-shadow:0 0 6px rgba(0,0,0,0.4)"></div>`,
+    className: '', iconSize:[18,18], iconAnchor:[9,9]
+  });
+  marker = L.marker([lat, lon], {icon})
+    .addTo(map)
+    .bindPopup(`<b>${desc}</b><br/><small>${sc.label}</small><br/><small>Lat: ${lat.toFixed(6)} Lon: ${lon.toFixed(6)}</small>`)
+    .openPopup();
+
+  // Buffer circles (dal più esterno al più interno per sovrapposizione corretta)
+  const b = sc.buffers;
+  const circleConfigs = [
+    { r: b.com,   color:'#6d28d9', fill:'#e9d5ff', label:'Comunicazione Sindaci', opacity:0.08 },
+    { r: b.adult, color:'#7c3aed', fill:'#ede9fe', label:'Buffer adulticida',      opacity:0.12 },
+    { r: b.larv,  color:'#15803d', fill:'#bbf7d0', label:'Buffer larvicida',       opacity:0.15 },
+    { r: b.ento,  color:'#0e7490', fill:'#a5f3fc', label:'Monitor. entomologico',  opacity:0.20 },
+  ];
+
+  circleConfigs.forEach(cfg => {
+    if (cfg.r > 0) {
+      const c = L.circle([lat, lon], {
+        radius: cfg.r,
+        color: cfg.color, weight: 2,
+        fillColor: cfg.fill, fillOpacity: cfg.opacity
+      }).addTo(map);
+      c.bindTooltip(`${cfg.label}: ${cfg.r >= 1000 ? (cfg.r/1000).toFixed(1)+' km' : cfg.r+' m'}`, {sticky:true});
+      circles.push(c);
+    }
+  });
+
+  // Fit mappa
+  const maxR = Math.max(b.com, b.larv, b.adult, b.ento);
+  map.fitBounds(L.circle([lat, lon], {radius: maxR}).getBounds().pad(0.1));
+
+  // Calcola comuni coinvolti
+  calcolaComuni(lat, lon);
+
+  // Mostra pannello risultati
+  document.getElementById('risultatiPanel').style.display = 'block';
+  document.getElementById('notePanel').style.display = 'block';
+  document.getElementById('exportPanel').style.display = 'block';
+}
+
+function catLabel(cat) {
+  return { ento:'Monitor. entomologico', larv:'Buffer larvicida', adult:'Buffer adulticida', com:'Comunicazione Sindaco' }[cat] || '';
+}
+
+// ── RENDER COMUNI ─────────────────────────────────────────────────────────
+function renderComuni(risultati) {
+  const out = document.getElementById('comuniOutput');
+  if (risultati.length === 0) {
+    out.innerHTML = '<p style="color:#6b7280;font-size:12px;padding:8px">Nessun comune del Medio Campidano nell\'area dei buffer definiti.</p>';
+    return;
+  }
+
+  const groups = { ento:[], larv:[], adult:[], com:[] };
+  risultati.forEach(c => groups[c.cat].push(c));
+
+  const catConfigs = [
+    { key:'ento',  label:'Monitor. entomologico', tagClass:'tag-esposizione', desc:'Trappole nell\'area' },
+    { key:'larv',  label:'Buffer larvicida',       tagClass:'tag-larvicida',   desc:'Larvicidi obbligatori' },
+    { key:'adult', label:'Buffer adulticida',      tagClass:'tag-adulticida',  desc:'Adulticidi prescritti' },
+    { key:'com',   label:'Comunicazione Sindaco',  tagClass:'tag-allerta',     desc:'Comunicazione precauzionale' },
+  ];
+
+  let html = '';
+  catConfigs.forEach(cfg => {
+    if (groups[cfg.key].length > 0) {
+      html += `<div style="margin-bottom:8px">
+        <div style="font-size:10px;font-weight:700;color:#374151;margin-bottom:4px">${cfg.label} — ${cfg.desc}</div>`;
+      groups[cfg.key].forEach(c => {
+        const d = c.dist_m >= 1000 ? (c.dist_m/1000).toFixed(2)+' km' : c.dist_m+' m';
+        html += `<span class="comune-tag ${cfg.tagClass}">${c.nome} <span style="font-weight:400">(${d})</span></span>`;
+      });
+      html += '</div>';
+    }
+  });
+
+  // Tabella PEC
+  html += `<div style="margin-top:10px">
+    <div style="font-size:10px;font-weight:700;color:#374151;margin-bottom:4px">PEC dei Comuni interessati</div>
+    <table style="width:100%;border-collapse:collapse;font-size:10px">
+      <tr style="background:#f3f4f6"><th style="padding:4px;text-align:left">Comune</th><th style="padding:4px;text-align:left">PEC Protocollo</th><th style="padding:4px">Dist.</th></tr>`;
+  risultati.forEach(c => {
+    const d = c.dist_m >= 1000 ? (c.dist_m/1000).toFixed(2)+' km' : c.dist_m+' m';
+    html += `<tr style="border-bottom:1px solid #f3f4f6">
+      <td style="padding:3px 4px;font-weight:600">${c.nome}</td>
+      <td style="padding:3px 4px;font-size:9px;color:#2563a8">${c.pec}</td>
+      <td style="padding:3px 4px;text-align:center">${d}</td></tr>`;
+  });
+  html += '</table></div>';
+
+  out.innerHTML = html;
+}
+
+// ── RENDER ADEMPIMENTI ────────────────────────────────────────────────────
+function renderAdempimenti(risultati) {
+  const sc = currentScenario;
+  const nomi = risultati.map(c => c.nome);
+  const esposti = risultati.filter(c => ['ento','larv','adult'].includes(c.cat)).map(c=>c.nome);
+  const allerta = risultati.filter(c => c.cat === 'com').map(c=>c.nome);
+
+  const urgenti = [
+    "Notifica PREMAL (D.M. 7/3/2022) + portale ISS arbo entro 24h da positività",
+    "Trasmissione scheda All.9 PNA a OER Sardegna (san.oer@regione.sardegna.it)",
+  ];
+  if (['febbre','neuro','cluster'].includes(sc.id)) {
+    urgenti.push("Comunicazione al Servizio Veterinario ASL per indagine congiunta entro 24h");
+    urgenti.push("Sollecito campioni a Lab. Reg. AOU Cagliari (laboratorio@aoucagliari.it)");
+  }
+
+  const standard = [];
+  if (esposti.length > 0) {
+    standard.push(`Lettera operativa ai Sindaci: ${esposti.join(', ')} — richiesta interventi larvicidi${sc.adult_obblig ? ' e adulticidi' : ''} (buffer di competenza)`);
+  }
+  if (allerta.length > 0) {
+    standard.push(`Comunicazione di allerta ai Sindaci: ${allerta.join(', ')} — nota precauzionale`);
+  }
+  if (sc.ordinanza) {
+    standard.push(`Proposta di ORDINANZA CONTINGIBILE E URGENTE (art. 54 D.Lgs. 267/2000) ai Sindaci dei Comuni: ${esposti.join(', ')}`);
+  }
+  standard.push("Comunicazione a Struttura Reg. Coordinamento Trasfusionale e Centro Reg. Trapianti");
+  standard.push("Aggiornamento PREMAL + portale ISS arbo + OER a 30 giorni dall'esordio");
+
+  let html = '<div style="font-size:10px;font-weight:700;color:#991b1b;margin-bottom:6px">⏱ URGENTI (entro 24h)</div>';
+  urgenti.forEach(a => {
+    html += `<div class="adempimento urgente">• ${a}</div>`;
+  });
+  html += '<div style="font-size:10px;font-weight:700;color:#2563a8;margin:8px 0 6px">📋 STANDARD</div>';
+  standard.forEach(a => {
+    html += `<div class="adempimento standard">• ${a}</div>`;
+  });
+
+  document.getElementById('adempimentiOutput').innerHTML = html;
+}
+
+// ── RENDER LEGENDA ────────────────────────────────────────────────────────
+function renderLegenda() {
+  const sc = currentScenario;
+  const b = sc.buffers;
+  const items = [
+    { color: sc.color, label: `Luogo di esposizione / segnale` },
+    { color: '#0e7490', label: `Monitoraggio entomologico: ${b.ento} m` },
+    { color: '#15803d', label: `Buffer larvicida: ${b.larv >= 1000 ? (b.larv/1000).toFixed(1)+' km' : b.larv+' m'}` },
+    { color: '#7c3aed', label: b.adult > 0 ? `Buffer adulticida: ${b.adult >= 1000 ? (b.adult/1000).toFixed(1)+' km' : b.adult+' m'}${sc.adult_obblig ? ' (OBBLIGATORIO)' : ''}` : 'Adulticida: non indicato in questo scenario' },
+    { color: '#6d28d9', label: `Comunicazione Sindaci: ${b.com >= 1000 ? (b.com/1000).toFixed(1)+' km' : b.com+' m'}` },
+  ];
+  document.getElementById('legendaOutput').innerHTML = items.map(i =>
+    `<div class="legend-item"><div class="legend-dot" style="background:${i.color}"></div><span>${i.label}</span></div>`
+  ).join('');
+}
+
+// ── RENDER NOTE ───────────────────────────────────────────────────────────
+function renderNote() {
+  const sc = currentScenario;
+  const notes = {
+    pool: "Pool zanzare positive: il buffer si calcola dal sito della trappola, non da abitazioni. Adulticidi NON indicati. Nessun obbligo di notifica PREMAL (caso umano assente).",
+    uccello: "Uccello morto: il buffer si calcola dal sito di ritrovamento. Adulticidi NON indicati. Nessun obbligo di notifica PREMAL. Coordinare con IZS Sardegna.",
+    equide: "Equide infetto: il buffer si calcola dalla sede dell'allevamento. Adulticidi NON indicati. Competenza primaria: Servizio Veterinario ASL.",
+    febbre: "Caso umano febbrile: il buffer si calcola dal LUOGO DI ESPOSIZIONE (non dalla residenza). Adulticidi su valutazione SISP. Notifica PREMAL obbligatoria.",
+    neuro: "Caso neuroinvasivo: RISPOSTA MASSIMA. Adulticidi OBBLIGATORI. Ordinanza sindacale contingibile raccomandata. Buffer comunicazione esteso a 2 km.",
+    cluster: "Cluster ≥2 casi: buffer calcolato sull'area tra le abitazioni più esterne (PNA All.8). Coordinamento regionale se intercomunale. Buffer in figura rappresentativo (adattare all'area reale del cluster).",
+  };
+  document.getElementById('noteOutput').innerHTML = `<b>⚑ Nota:</b> ${notes[sc.id]}`;
+}
+
+// ── TAB SWITCHING ─────────────────────────────────────────────────────────
+function switchTab(tab) {
+  ['comuni','adempimenti','legenda'].forEach(t => {
+    document.getElementById('tab'+t.charAt(0).toUpperCase()+t.slice(1)).style.display = t===tab ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach((b,i) => {
+    const tabs = ['comuni','adempimenti','legenda'];
+    b.classList.toggle('active', tabs[i]===tab);
+  });
+}
+
+// ── CLEAR ─────────────────────────────────────────────────────────────────
+function clearLayers() {
+  if (marker) { map.removeLayer(marker); marker = null; }
+  circles.forEach(c => map.removeLayer(c)); circles = [];
+  comuniMarkers.forEach(m => map.removeLayer(m)); comuniMarkers = [];
+}
+
+function clearAll() {
+  clearLayers();
+  ultimiComuniCoinvolti = [];
+  currentLat = null; currentLon = null;
+  document.getElementById('latInput').value = '';
+  document.getElementById('lonInput').value = '';
+  document.getElementById('descInput').value = '';
+  document.getElementById('addressInput').value = '';
+  document.getElementById('geocodeMsg').textContent = '';
+  document.getElementById('risultatiPanel').style.display = 'none';
+  document.getElementById('notePanel').style.display = 'none';
+  document.getElementById('exportPanel').style.display = 'none';
+  map.setView([39.58, 8.87], 10);
+}
+
+// ── UTILITÀ GEOMETRICHE ────────────────────────────────────────────────────
+// Genera poligono approssimato di un cerchio (N vertici) in GeoJSON
+function circleToPolygon(lat, lon, radiusM, nPts) {
+  const pts = [];
+  const R = 6371000;
+  for (let i = 0; i <= nPts; i++) {
+    const angle = (2 * Math.PI * i) / nPts;
+    const dLat = (radiusM / R) * (180 / Math.PI) * Math.cos(angle);
+    const dLon = (radiusM / R) * (180 / Math.PI) * Math.sin(angle) / Math.cos(lat * Math.PI / 180);
+    pts.push([lon + dLon, lat + dLat]);
+  }
+  pts.push(pts[0]); // chiudi il poligono
+  return pts;
+}
+
+// ── STATO GLOBALE COMUNI COINVOLTI ─────────────────────────────────────────
+let ultimiComuniCoinvolti = [];
+
+// Sovrascriviamo calcolaComuni per salvare i risultati
+function calcolaComuni(lat, lon) {
+  const sc = currentScenario;
+  const b = sc.buffers;
+  const risultati = COMUNI.map(c => {
+    const d = distanza(lat, lon, c.lat, c.lon);
+    let cat = null;
+    if (d <= b.ento) cat = 'ento';
+    else if (d <= b.larv) cat = 'larv';
+    else if (sc.adult_obblig && b.adult > 0 && d <= b.adult) cat = 'adult';
+    else if (d <= b.com) cat = 'com';
+    return { ...c, dist_m: Math.round(d), cat };
+  }).filter(c => c.cat !== null).sort((a,b) => a.dist_m - b.dist_m);
+  ultimiComuniCoinvolti = risultati;
+
+  // Aggiungi markers
+  risultati.forEach(c => {
+    const colors = { ento:'#0e7490', larv:'#15803d', adult:'#7c3aed', com:'#b45309' };
+    const m = L.circleMarker([c.lat, c.lon], {
+      radius: 8, color: 'white', fillColor: colors[c.cat],
+      fillOpacity: 1, weight: 2
+    }).addTo(map)
+      .bindPopup(`<b>${c.nome}</b><br/>Distanza: ${c.dist_m >= 1000 ? (c.dist_m/1000).toFixed(2)+' km' : c.dist_m+' m'}<br/>Categoria: ${catLabel(c.cat)}<br/><small>PEC: ${c.pec}</small>`);
+    comuniMarkers.push(m);
+  });
+
+  renderComuni(risultati);
+  renderAdempimenti(risultati);
+  renderLegenda();
+  renderNote();
+}
+
+// ── EXPORT GEOJSON ────────────────────────────────────────────────────────
+function esportaGeoJSON() {
+  if (!currentLat) { alert('Georeferenziare prima un punto.'); return; }
+  const sc = currentScenario;
+  const b = sc.buffers;
+  const desc = document.getElementById('descInput').value || 'Luogo di esposizione WNV';
+  const dataOra = new Date().toISOString().slice(0,16).replace('T',' ');
+
+  const features = [];
+
+  // 1. Punto di esposizione
+  features.push({
+    type: "Feature",
+    geometry: { type: "Point", coordinates: [currentLon, currentLat] },
+    properties: {
+      tipo: "Luogo esposizione",
+      descrizione: desc,
+      scenario: sc.label,
+      data_ora: dataOra,
+      operatore: "SISP ASL Mediocampidano",
+      lat: currentLat,
+      lon: currentLon
+    }
+  });
+
+  // 2. Buffer come poligoni
+  const bufferLayers = [
+    { key:'ento',  r:b.ento,  label:'Monitoraggio entomologico', colore:'#0e7490' },
+    { key:'larv',  r:b.larv,  label:'Buffer larvicida',          colore:'#15803d' },
+    { key:'adult', r:b.adult, label:'Buffer adulticida',         colore:'#7c3aed' },
+    { key:'com',   r:b.com,   label:'Comunicazione Sindaci',     colore:'#6d28d9' },
+  ];
+  bufferLayers.forEach(bl => {
+    if (bl.r > 0) {
+      features.push({
+        type: "Feature",
+        geometry: { type: "Polygon", coordinates: [circleToPolygon(currentLat, currentLon, bl.r, 64)] },
+        properties: {
+          tipo: "Buffer",
+          nome_buffer: bl.label,
+          raggio_m: bl.r,
+          raggio_km: (bl.r/1000).toFixed(3),
+          colore_suggerito: bl.colore,
+          scenario: sc.label,
+          adulticida_obbligatorio: sc.adult_obblig ? "SI" : "NO",
+          ordinanza_contingibile: sc.ordinanza ? "SI" : "NO",
+        }
+      });
+    }
+  });
+
+  // 3. Comuni coinvolti
+  ultimiComuniCoinvolti.forEach(c => {
+    const catDescrizioni = {
+      ento: 'Monitoraggio entomologico (area immediata)',
+      larv: 'Intervento larvicida obbligatorio',
+      adult: 'Intervento adulticida prescritto',
+      com: 'Comunicazione precauzionale al Sindaco'
+    };
+    features.push({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [c.lon, c.lat] },
+      properties: {
+        tipo: "Comune coinvolto",
+        nome: c.nome,
+        categoria_buffer: catDescrizioni[c.cat] || c.cat,
+        codice_categoria: c.cat,
+        distanza_m: c.dist_m,
+        distanza_km: (c.dist_m/1000).toFixed(3),
+        distretto_sisp: c.dist,
+        pec_protocollo: c.pec,
+        adempimento: c.cat === 'com'
+          ? 'Comunicazione informativa al Sindaco - nessun intervento vettoriale diretto'
+          : 'Lettera operativa al Sindaco con indicazioni tecniche ' + (sc.ordinanza ? '+ proposta ordinanza contingibile' : ''),
+        scenario: sc.label,
+        data_ora: dataOra,
+        fonte_pec: 'comuni-italiani.it / sardegnaautonomie.it (giugno 2026)'
+      }
+    });
+  });
+
+  const geojson = {
+    type: "FeatureCollection",
+    crs: { type: "name", properties: { name: "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+    metadata: {
+      titolo: "WNV Georeferenziazione Buffer - SISP ASL Mediocampidano",
+      scenario: sc.label,
+      data_generazione: dataOra,
+      proiezione: "WGS84 (EPSG:4326)",
+      fonte: "PNA 2020-2025, Piano Reg. WND/USUTU agg. 2026",
+      note_qgis: "Importare in QGIS: Layer > Aggiungi layer > Aggiungi layer vettoriale. Stile suggerito: buffer per riempimento trasparente, comuni per colore categoria."
+    },
+    features
+  };
+
+  const nomeFile = `WNV_buffer_${sc.id}_${dataOra.replace(/[: ]/g,'-')}.geojson`;
+  scaricaFile(JSON.stringify(geojson, null, 2), nomeFile, 'application/geo+json');
+}
+
+// ── EXPORT KML ────────────────────────────────────────────────────────────
+function esportaKML() {
+  if (!currentLat) { alert('Georeferenziare prima un punto.'); return; }
+  const sc = currentScenario;
+  const b = sc.buffers;
+  const desc = document.getElementById('descInput').value || 'Luogo di esposizione WNV';
+  const dataOra = new Date().toISOString().slice(0,16).replace('T',' ');
+
+  const colorMap = { ento:'7f0e7490', larv:'7f15803d', adult:'7f7c3aed', com:'7f6d28d9' };
+  const labelMap = { ento:'Monitoraggio entomologico', larv:'Buffer larvicida', adult:'Buffer adulticida', com:'Comunicazione Sindaci' };
+
+  let placemarksBuffer = '';
+  const bufferLayers = [
+    { key:'ento',  r:b.ento  },
+    { key:'larv',  r:b.larv  },
+    { key:'adult', r:b.adult },
+    { key:'com',   r:b.com   },
+  ];
+  bufferLayers.forEach(bl => {
+    if (bl.r > 0) {
+      const pts = circleToPolygon(currentLat, currentLon, bl.r, 64);
+      const coords = pts.map(p => `${p[0]},${p[1]},0`).join(' ');
+      placemarksBuffer += `
+    <Placemark>
+      <name>${labelMap[bl.key]} (${bl.r >= 1000 ? (bl.r/1000).toFixed(1)+' km' : bl.r+' m'})</name>
+      <description>Scenario: ${sc.label} | Raggio: ${bl.r} m</description>
+      <Style><PolyStyle><color>${colorMap[bl.key]}</color><outline>1</outline></PolyStyle></Style>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>${coords}</coordinates></LinearRing></outerBoundaryIs></Polygon>
+    </Placemark>`;
+    }
+  });
+
+  let placemarksComuni = '';
+  ultimiComuniCoinvolti.forEach(c => {
+    placemarksComuni += `
+    <Placemark>
+      <name>${c.nome}</name>
+      <description><![CDATA[
+        <b>Categoria:</b> ${labelMap[c.cat]}<br/>
+        <b>Distanza:</b> ${c.dist_m >= 1000 ? (c.dist_m/1000).toFixed(2)+' km' : c.dist_m+' m'}<br/>
+        <b>Distretto SISP:</b> ${c.dist}<br/>
+        <b>PEC:</b> ${c.pec}
+      ]]></description>
+      <Point><coordinates>${c.lon},${c.lat},0</coordinates></Point>
+    </Placemark>`;
+  });
+
+  const kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+  <name>WNV Buffer - ${sc.label} - ${dataOra}</name>
+  <description>SISP ASL Mediocampidano | PNA 2020-2025 | Piano Reg. WND/USUTU agg. 2026</description>
+
+  <Folder>
+    <name>Punto di esposizione</name>
+    <Placemark>
+      <name>${desc}</name>
+      <description>Scenario: ${sc.label} | Data: ${dataOra}</description>
+      <Point><coordinates>${currentLon},${currentLat},0</coordinates></Point>
+    </Placemark>
+  </Folder>
+
+  <Folder>
+    <name>Buffer operativi</name>${placemarksBuffer}
+  </Folder>
+
+  <Folder>
+    <name>Comuni coinvolti</name>${placemarksComuni}
+  </Folder>
+</Document>
+</kml>`;
+
+  const nomeFile = `WNV_buffer_${sc.id}_${dataOra.replace(/[: ]/g,'-')}.kml`;
+  scaricaFile(kml, nomeFile, 'application/vnd.google-earth.kml+xml');
+}
+
+// ── EXPORT CSV ────────────────────────────────────────────────────────────
+function esportaCSV() {
+  if (!currentLat) { alert('Georeferenziare prima un punto.'); return; }
+  const sc = currentScenario;
+  const desc = document.getElementById('descInput').value || 'Luogo di esposizione WNV';
+  const dataOra = new Date().toISOString().slice(0,16).replace('T',' ');
+  const b = sc.buffers;
+
+  const catDescrizioni = {
+    ento: 'Monitoraggio entomologico',
+    larv: 'Buffer larvicida',
+    adult: 'Buffer adulticida',
+    com: 'Comunicazione Sindaco'
+  };
+
+  let csv = 'TIPO;NOME;LAT;LON;CATEGORIA_BUFFER;DISTANZA_M;DISTANZA_KM;DISTRETTO_SISP;PEC_PROTOCOLLO;SCENARIO;DATA_ORA;NOTE\n';
+
+  // Punto di esposizione
+  csv += `ESPOSIZIONE;"${desc}";${currentLat};${currentLon};;;;;;;${sc.label};${dataOra};"Luogo esposizione georeferenziato"\n`;
+
+  // Info buffer (come righe di metadato)
+  const bufferInfo = [
+    { k:'ento', r:b.ento,  l:'Monitoraggio entomologico' },
+    { k:'larv', r:b.larv,  l:'Buffer larvicida' },
+    { k:'adult',r:b.adult, l:'Buffer adulticida' },
+    { k:'com',  r:b.com,   l:'Comunicazione Sindaci' },
+  ];
+  bufferInfo.forEach(bi => {
+    if (bi.r > 0) {
+      csv += `BUFFER;"${bi.l}";${currentLat};${currentLon};${bi.l};${bi.r};${(bi.r/1000).toFixed(3)};;;;${sc.label};${dataOra};"Raggio ${bi.r} m"\n`;
+    }
+  });
+
+  // Comuni coinvolti
+  ultimiComuniCoinvolti.forEach(c => {
+    csv += `COMUNE;"${c.nome}";${c.lat};${c.lon};"${catDescrizioni[c.cat] || c.cat}";${c.dist_m};${(c.dist_m/1000).toFixed(3)};"${c.dist}";"${c.pec}";${sc.label};${dataOra};"PEC verificata giugno 2026"\n`;
+  });
+
+  const nomeFile = `WNV_buffer_${sc.id}_${dataOra.replace(/[: ]/g,'-')}.csv`;
+  scaricaFile('\uFEFF' + csv, nomeFile, 'text/csv;charset=utf-8');
+  // \uFEFF = BOM UTF-8 per compatibilità Excel italiano (separatore punto-e-virgola)
+}
+
+// ── HELPER DOWNLOAD ───────────────────────────────────────────────────────
+function scaricaFile(contenuto, nomeFile, mimeType) {
+  const blob = new Blob([contenuto], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = nomeFile;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// ── SERVICE WORKER + PWA ───────────────────────────────────────────────────
+let deferredInstallPrompt = null;
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      console.log('[PWA] Service Worker registrato:', reg.scope);
+    }).catch(err => {
+      console.warn('[PWA] SW registration failed:', err);
+    });
+  });
+}
+
+// Intercetta prompt installazione Android/Desktop
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  document.getElementById('installBanner').style.display = 'flex';
+});
+
+function installPWA() {
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then(() => {
+      deferredInstallPrompt = null;
+      document.getElementById('installBanner').style.display = 'none';
+    });
+  } else {
+    // iOS: istruzioni manuali
+    alert('Su iPhone:\n1. Tocca il pulsante Condividi (□↑) in Safari\n2. Scorri e tocca "Aggiungi a schermata Home"\n3. Tocca "Aggiungi"\n\nL\'app sarà disponibile come icona sulla schermata Home.');
+  }
+}
+
+// Banner offline
+window.addEventListener('online',  () => document.getElementById('offlineBanner').style.display = 'none');
+window.addEventListener('offline', () => document.getElementById('offlineBanner').style.display = 'block');
+
+// ── GPS NATIVO (iOS/Android) ────────────────────────────────────────────────
+function usaGPS() {
+  if (!navigator.geolocation) {
+    alert('GPS non disponibile su questo dispositivo.');
+    return;
+  }
+  const btn = document.getElementById('gpsBtn');
+  btn.textContent = '📡 Acquisizione...';
+  btn.disabled = true;
+
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const lat = pos.coords.latitude.toFixed(6);
+      const lon = pos.coords.longitude.toFixed(6);
+      document.getElementById('latInput').value = lat;
+      document.getElementById('lonInput').value = lon;
+      document.getElementById('geocodeMsg').textContent =
+        `✓ GPS: precisione ±${Math.round(pos.coords.accuracy)} m`;
+      document.getElementById('geocodeMsg').style.color = '#15803d';
+      btn.textContent = '📡 GPS';
+      btn.disabled = false;
+      plotPoint();
+    },
+    err => {
+      const msgs = {1:'Accesso GPS negato. Abilitare in Impostazioni.', 2:'GPS non disponibile.', 3:'Timeout GPS.'};
+      alert(msgs[err.code] || 'Errore GPS.');
+      btn.textContent = '📡 GPS';
+      btn.disabled = false;
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+  );
+}
+
+</script>
+</body>
+</html>
