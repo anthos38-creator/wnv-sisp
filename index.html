@@ -8,999 +8,1325 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="WNV SISP">
 <meta name="theme-color" content="#1a3a5c">
-<meta name="description" content="Georeferenziazione WNV – SISP ASL Mediocampidano">
-<title>WNV SISP – ASL Mediocampidano</title>
+<title>WNV SISP – Pannello Operativo Integrato</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
-<link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f4ff; color: #374151; }
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bd:#1a3a5c;--bm:#2563a8;--bl:#dbeafe;--bp:#f0f6ff;
+  --gd:#374151;--gm:#6b7280;--gl:#f3f4f6;
+  --or:#b45309;--ol:#fef9ec;--rd:#991b1b;--rl:#fff5f5;
+  --gn:#14532d;--gl2:#f0fdf4;--wh:#ffffff;
+  --sat:env(safe-area-inset-top,0px);
+}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#e8edf5;color:var(--gd);height:100vh;overflow:hidden}
 
-  .header {
-    background: #1a3a5c; color: white;
-    padding: 12px 20px;
-    display: flex; align-items: center; gap: 16px;
-  }
-  .header h1 { font-size: 16px; font-weight: 700; }
-  .header p { font-size: 11px; opacity: 0.75; }
+/* ── HEADER ── */
+.hdr{background:var(--bd);color:white;padding:10px 18px;display:flex;align-items:center;
+     gap:14px;justify-content:space-between;padding-top:calc(10px + var(--sat))}
+.hdr-title{font-size:15px;font-weight:700}
+.hdr-sub{font-size:10px;opacity:.7;margin-top:1px}
+.hdr-step{display:flex;gap:6px;align-items:center}
+.step-dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;
+          justify-content:center;font-size:11px;font-weight:800;cursor:pointer;transition:.2s}
+.step-dot.done{background:#15803d;color:white}
+.step-dot.active{background:white;color:var(--bd)}
+.step-dot.todo{background:rgba(255,255,255,.2);color:rgba(255,255,255,.6)}
+.step-label{font-size:9px;color:rgba(255,255,255,.6);margin-top:1px;text-align:center;max-width:54px;line-height:1.2}
 
-  .layout { display: grid; grid-template-columns: 340px 1fr; height: calc(100vh - 54px); }
+/* ── LAYOUT ── */
+.layout{display:grid;grid-template-columns:380px 1fr;height:calc(100vh - 54px - var(--sat))}
+.panel{background:white;border-right:1px solid #e5e7eb;overflow-y:auto;
+       padding:14px;display:flex;flex-direction:column;gap:12px;
+       -webkit-overflow-scrolling:touch}
+#map{width:100%;height:100%}
 
-  /* LEFT PANEL */
-  .panel {
-    background: white; border-right: 1px solid #e5e7eb;
-    overflow-y: auto; padding: 14px;
-    display: flex; flex-direction: column; gap: 12px;
-  }
+/* ── STEPS ── */
+.step-panel{display:none}
+.step-panel.active{display:flex;flex-direction:column;gap:10px}
 
-  .section-title {
-    font-size: 10px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 1px; color: #6b7280; margin-bottom: 6px;
-  }
+/* ── COMPONENTS ── */
+.sec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
+     color:var(--gm);margin-bottom:5px}
+.card{background:#f9fafb;border:1px solid #e5e7eb;border-radius:7px;padding:10px}
+label{font-size:11px;font-weight:600;color:var(--gd);display:block;margin-bottom:3px}
+input,select,textarea{width:100%;padding:7px 10px;border:1px solid #d1d5db;
+  border-radius:5px;font-size:12px;background:white;font-family:inherit}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--bm)}
+textarea{resize:vertical;min-height:60px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
 
-  .card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px; }
+.btn{padding:9px 12px;border:none;border-radius:6px;font-size:12px;font-weight:700;
+     cursor:pointer;min-height:40px;-webkit-tap-highlight-color:transparent;
+     transition:opacity .15s;width:100%}
+.btn:hover{opacity:.85}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-blue{background:var(--bd);color:white}
+.btn-green{background:#15803d;color:white}
+.btn-teal{background:#0e7490;color:white}
+.btn-red{background:#dc2626;color:white}
+.btn-grey{background:#e5e7eb;color:var(--gd)}
+.btn-orange{background:var(--or);color:white}
+.btn-purple{background:#7c3aed;color:white}
+.btn-row{display:flex;gap:6px}
+.btn-row .btn{flex:1}
 
-  label { font-size: 11px; font-weight: 600; color: #374151; display: block; margin-bottom: 3px; }
-  input, select {
-    width: 100%; padding: 7px 10px; border: 1px solid #d1d5db;
-    border-radius: 5px; font-size: 12px; background: white;
-  }
-  input:focus, select:focus { outline: 2px solid #2563a8; }
+.info{padding:8px 10px;border-radius:5px;font-size:11px;line-height:1.5}
+.info-blue{background:#eff6ff;border:1px solid #3b82f6;color:#1e40af}
+.info-orange{background:var(--ol);border:1px solid #d97706;color:var(--or)}
+.info-red{background:var(--rl);border:1px solid #ef4444;color:var(--rd)}
+.info-green{background:var(--gl2);border:1px solid #86efac;color:var(--gn)}
 
-  .coord-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+/* Upload zone */
+.upload-zone{border:2.5px dashed var(--bm);border-radius:10px;padding:28px 16px;
+             text-align:center;cursor:pointer;transition:.2s;background:var(--bp)}
+.upload-zone:hover,.upload-zone.drag{border-color:#15803d;background:#f0fdf4}
+.upload-zone.loading{border-color:var(--or);background:var(--ol)}
+.upload-zone input{display:none}
+.upload-icon{font-size:36px;margin-bottom:8px}
+.upload-title{font-size:13px;font-weight:700;color:var(--bd);margin-bottom:4px}
+.upload-sub{font-size:11px;color:var(--gm)}
 
-  .btn {
-    padding: 9px 14px; border: none; border-radius: 6px;
-    font-size: 12px; font-weight: 700; cursor: pointer;
-    width: 100%; transition: opacity 0.15s;
-  }
-  .btn:hover { opacity: 0.85; }
-  .btn-primary { background: #1a3a5c; color: white; }
-  .btn-secondary { background: #e5e7eb; color: #374151; }
-  .btn-danger { background: #ef4444; color: white; }
-  .btn-green { background: #15803d; color: white; }
+/* Extracted fields */
+.field-extracted{background:#f0fdf4;border:1px solid #86efac;border-radius:5px;padding:6px 9px;
+                 font-size:11px;margin-bottom:4px}
+.field-label{font-size:10px;color:var(--gm);font-weight:600}
+.field-val{color:var(--gd);font-weight:600;margin-top:1px}
+.field-warn{background:var(--ol);border-color:#d97706}
 
-  .scenario-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-  .scenario-btn {
-    padding: 7px 8px; border-radius: 5px; border: 2px solid transparent;
-    font-size: 11px; font-weight: 600; cursor: pointer; text-align: center;
-    transition: all 0.15s;
-  }
+/* Scenario buttons */
+.sc-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.sc-btn{padding:7px 6px;border-radius:5px;border:2px solid transparent;
+        font-size:11px;font-weight:600;cursor:pointer;text-align:center;min-height:38px}
 
-  .buffer-legend { display: flex; flex-direction: column; gap: 4px; }
-  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 11px; }
-  .legend-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+/* Punti esposizione */
+.pt-item{display:flex;align-items:center;gap:8px;padding:7px 10px;
+         border-radius:6px;border:1.5px solid #e5e7eb;background:white;font-size:11px}
+.pt-dot{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;
+        justify-content:center;font-size:10px;font-weight:800;color:white;flex-shrink:0}
+.pt-del{background:none;border:none;color:#ef4444;font-size:16px;cursor:pointer;
+        padding:2px 6px;min-height:28px;width:auto}
 
-  .comuni-list { max-height: 180px; overflow-y: auto; }
-  .comune-tag {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 3px 8px; border-radius: 4px; font-size: 11px;
-    margin: 2px; font-weight: 600;
-  }
-  .tag-esposizione { background: #fee2e2; color: #991b1b; }
-  .tag-larvicida { background: #dcfce7; color: #14532d; }
-  .tag-adulticida { background: #ede9fe; color: #5b21b6; }
-  .tag-allerta { background: #fef3c7; color: #92400e; }
+/* Prob buttons */
+.prob-row{display:flex;gap:5px;margin-top:5px}
+.prob-btn{flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid #e5e7eb;
+          font-size:10px;font-weight:700;cursor:pointer;text-align:center;background:white}
+.pb-alta  {background:#fee2e2;border-color:#ef4444;color:#991b1b}
+.pb-media {background:#fef3c7;border-color:#d97706;color:#92400e}
+.pb-bassa {background:#f0fdf4;border-color:#16a34a;color:#14532d}
 
-  .adempimenti-list { font-size: 11px; }
-  .adempimento {
-    padding: 5px 8px; margin-bottom: 4px; border-radius: 4px;
-    border-left: 3px solid #d1d5db; background: #f9fafb;
-    line-height: 1.4;
-  }
-  .adempimento.urgente { border-left-color: #ef4444; background: #fff5f5; color: #991b1b; font-weight: 600; }
-  .adempimento.standard { border-left-color: #2563a8; }
+/* Tabs */
+.tabs{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
+.tab{padding:5px 9px;font-size:11px;font-weight:600;border:none;border-radius:4px;
+     cursor:pointer;background:#e5e7eb;color:var(--gm);min-height:30px}
+.tab.active{background:var(--bd);color:white}
 
-  .info-box {
-    padding: 8px 10px; border-radius: 5px; font-size: 11px; line-height: 1.5;
-  }
-  .info-orange { background: #fef9ec; border: 1px solid #d97706; color: #92400e; }
-  .info-blue { background: #eff6ff; border: 1px solid #3b82f6; color: #1e40af; }
-  .info-red { background: #fff5f5; border: 1px solid #ef4444; color: #991b1b; }
+/* Comuni tags */
+.c-tag{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;
+       font-size:10px;font-weight:700;margin:2px}
+.tag-e{background:#fee2e2;color:#991b1b}
+.tag-l{background:#dcfce7;color:#14532d}
+.tag-a{background:#ede9fe;color:#5b21b6}
+.tag-c{background:#fef3c7;color:#92400e}
 
-  #map { width: 100%; height: 100%; }
+/* Adempimenti */
+.adm{padding:5px 8px;margin-bottom:4px;border-radius:4px;border-left:3px solid #d1d5db;
+     background:#f9fafb;font-size:11px;line-height:1.4}
+.adm.urg{border-left-color:#ef4444;background:#fff5f5;color:#991b1b;font-weight:600}
+.adm.std{border-left-color:var(--bm)}
 
-  .geocode-row { display: flex; gap: 6px; }
-  .geocode-row input { flex: 1; }
-  .geocode-row button { white-space: nowrap; padding: 7px 10px; font-size: 11px; font-weight: 600;
-    background: #2563a8; color: white; border: none; border-radius: 5px; cursor: pointer; }
+/* Comunicazioni list */
+.comm-item{display:flex;align-items:center;gap:8px;padding:8px 10px;
+           border:1px solid #e5e7eb;border-radius:6px;margin-bottom:5px;background:white}
+.comm-icon{font-size:18px;flex-shrink:0}
+.comm-info{flex:1;font-size:11px}
+.comm-nome{font-weight:700;color:var(--bd)}
+.comm-dest{color:var(--gm);font-size:10px;margin-top:1px}
+.comm-btn{background:var(--bd);color:white;border:none;border-radius:4px;
+          padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
 
-  .tabs { display: flex; gap: 4px; margin-bottom: 8px; }
-  .tab { padding: 5px 10px; font-size: 11px; font-weight: 600; border: none;
-    border-radius: 4px; cursor: pointer; background: #e5e7eb; color: #6b7280; }
-  .tab.active { background: #1a3a5c; color: white; }
+/* Loading spinner */
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);
+         border-top-color:white;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-  .badge { display: inline-block; padding: 1px 6px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+/* Progress bar */
+.progress{height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;margin-top:6px}
+.progress-bar{height:100%;background:var(--bm);border-radius:2px;transition:width .4s}
 
-  /* ── PWA / iOS SPECIFICO ─────────────────────────────── */
-  :root {
-    --sat: env(safe-area-inset-top);
-    --sar: env(safe-area-inset-right);
-    --sab: env(safe-area-inset-bottom);
-    --sal: env(safe-area-inset-left);
-  }
-  body { padding-top: var(--sat); }
-  .header { padding-top: calc(12px + var(--sat)); }
+/* Status badge */
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700}
+.badge-ok{background:#dcfce7;color:#14532d}
+.badge-warn{background:#fef3c7;color:#92400e}
+.badge-err{background:#fee2e2;color:#991b1b}
 
-  /* Touch targets minimi 44pt per iOS HIG */
-  .btn { min-height: 44px; }
-  .tab { min-height: 36px; }
-  .scenario-btn { min-height: 40px; }
-  button { -webkit-tap-highlight-color: transparent; }
+/* Offline/install */
+#offlineBanner{display:none;position:fixed;top:0;left:0;right:0;background:var(--or);
+  color:white;padding:6px 14px;font-size:11px;font-weight:600;text-align:center;z-index:9999}
 
-  /* Scroll momentum su iOS */
-  .panel, .comuni-list, .adempimenti-list { -webkit-overflow-scrolling: touch; }
+/* GEO row */
+.geo-row{display:flex;gap:5px}
+.geo-row input{flex:1}
+.geo-row button{background:var(--bm);color:white;border:none;border-radius:5px;
+  padding:7px 10px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap}
 
-  /* Layout responsive: stack su schermi piccoli */
-  @media (max-width: 700px) {
-    .layout { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
-    .panel { max-height: 55vh; border-right: none; border-bottom: 1px solid #e5e7eb; }
-    #map { height: 45vh; }
-    .header h1 { font-size: 14px; }
-    .scenario-grid { grid-template-columns: 1fr 1fr; }
-    .coord-row { grid-template-columns: 1fr 1fr; }
-  }
-  @media (max-width: 400px) {
-    .scenario-grid { grid-template-columns: 1fr; }
-    .panel { padding: 10px; }
-  }
-
-  /* Splash screen offline */
-  #offlineBanner {
-    display: none; position: fixed; top: 0; left: 0; right: 0;
-    background: #b45309; color: white;
-    padding: 8px 16px; font-size: 12px; font-weight: 600;
-    text-align: center; z-index: 9999;
-  }
-
-  /* Install prompt */
-  #installBanner {
-    display: none; background: #f0fdf4; border-bottom: 1px solid #86efac;
-    padding: 8px 14px; font-size: 12px; color: #14532d;
-    align-items: center; gap: 10px;
-  }
-  #installBanner button {
-    background: #15803d; color: white; border: none;
-    border-radius: 5px; padding: 6px 12px; font-size: 11px;
-    font-weight: 700; cursor: pointer; white-space: nowrap;
-  }
-
+@media(max-width:700px){
+  .layout{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  .panel{max-height:55vh;border-right:none;border-bottom:1px solid #e5e7eb}
+  #map{height:45vh}
+  .hdr-step{display:none}
+}
 </style>
 </head>
 <body>
+<div id="offlineBanner">⚠ Offline – funzioni operative attive, mappa e AI non disponibili</div>
 
-
-<div id="offlineBanner">⚠ Modalità offline – La mappa potrebbe non essere disponibile. I dati e le funzioni operative funzionano normalmente.</div>
-<div id="installBanner" style="display:flex">
-  <span style="flex:1">📱 Installa WNV SISP sulla schermata Home per usarla offline</span>
-  <button onclick="installPWA()">Installa</button>
-  <button onclick="document.getElementById('installBanner').style.display='none'" 
-          style="background:#6b7280;margin-left:6px">✕</button>
-</div>
-
-<div class="header">
+<!-- ══ HEADER ══════════════════════════════════════════════════════════ -->
+<div class="hdr">
   <div>
-    <h1>🗺️ WNV Georeferenziazione – Buffer e Comuni coinvolti</h1>
-    <p>SISP ASL Mediocampidano · PNA 2020-2025 · Piano Reg. WND/USUTU agg. 2026</p>
+    <div class="hdr-title">🏥 WNV SISP – Pannello Operativo Integrato</div>
+    <div class="hdr-sub">ASL Mediocampidano · PNA 2020-2025 · Piano Reg. WND/USUTU agg. 2026</div>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+    <div class="hdr-step" id="stepNav">
+      <div style="display:flex;flex-direction:column;align-items:center">
+        <div class="step-dot active" id="sd1" onclick="goStep(1)">1</div>
+        <div class="step-label">Carica PDF</div>
+      </div>
+      <div style="width:20px;height:1px;background:rgba(255,255,255,.3);margin-top:-12px"></div>
+      <div style="display:flex;flex-direction:column;align-items:center">
+        <div class="step-dot todo" id="sd2" onclick="goStep(2)">2</div>
+        <div class="step-label">Verifica dati</div>
+      </div>
+      <div style="width:20px;height:1px;background:rgba(255,255,255,.3);margin-top:-12px"></div>
+      <div style="display:flex;flex-direction:column;align-items:center">
+        <div class="step-dot todo" id="sd3" onclick="goStep(3)">3</div>
+        <div class="step-label">Buffer &amp; Comuni</div>
+      </div>
+      <div style="width:20px;height:1px;background:rgba(255,255,255,.3);margin-top:-12px"></div>
+      <div style="display:flex;flex-direction:column;align-items:center">
+        <div class="step-dot todo" id="sd4" onclick="goStep(4)">4</div>
+        <div class="step-label">Genera PDF</div>
+      </div>
+    </div>
   </div>
 </div>
 
 <div class="layout">
-  <!-- LEFT PANEL -->
-  <div class="panel">
+<!-- ══ PANNELLO SINISTRA ════════════════════════════════════════════════ -->
+<div class="panel" id="mainPanel">
 
-    <!-- SCENARIO -->
-    <div>
-      <div class="section-title">1. Tipo di segnale / scenario</div>
-      <div class="scenario-grid" id="scenarioBtns"></div>
+<!-- ════ STEP 1: CARICA PDF ════════════════════════════════════════════ -->
+<div class="step-panel active" id="step1">
+  <div class="sec">Carica la scheda di segnalazione (Allegato 9 PNA)</div>
+
+  <div class="upload-zone" id="uploadZone" onclick="document.getElementById('pdfInput').click()"
+       ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)">
+    <input type="file" id="pdfInput" accept=".pdf" onchange="handleFile(event)">
+    <div class="upload-icon" id="uploadIcon">📄</div>
+    <div class="upload-title" id="uploadTitle">Trascina qui il PDF</div>
+    <div class="upload-sub" id="uploadSub">oppure clicca per selezionare il file<br/>
+      Scheda WNV/USUV – Allegato 9 PNA 2020-2025</div>
+    <div class="progress" id="uploadProgress" style="display:none">
+      <div class="progress-bar" id="progressBar" style="width:0%"></div>
     </div>
-
-    <!-- COORDINATE -->
-    <div>
-      <div class="section-title">2. Luogo di esposizione / segnale</div>
-      <div class="card">
-        <div style="margin-bottom:8px">
-          <label>Cerca per indirizzo (geocodifica)</label>
-          <div class="geocode-row">
-            <input type="text" id="addressInput" placeholder="es. Via Marmilla 5, Solarussa" />
-            <button onclick="geocodeAddress()">Cerca</button>
-          </div>
-          <div id="geocodeMsg" style="font-size:10px;color:#6b7280;margin-top:3px"></div>
-        </div>
-        <div style="font-size:10px;color:#9ca3af;text-align:center;margin:4px 0">oppure inserire coordinate manualmente</div>
-        <div class="coord-row">
-          <div>
-            <label>Latitudine</label>
-            <input type="number" id="latInput" step="0.0001" placeholder="39.5500" />
-          </div>
-          <div>
-            <label>Longitudine</label>
-            <input type="number" id="lonInput" step="0.0001" placeholder="8.9000" />
-          </div>
-        </div>
-        <div style="margin-top:8px">
-          <label>Descrizione luogo (opzionale)</label>
-          <input type="text" id="descInput" placeholder="es. Via Giovanni XXIII 7, Solarussa" />
-        </div>
-        <div style="margin-top:8px;display:flex;gap:6px">
-          <button class="btn btn-primary" style="flex:2" onclick="plotPoint()">📍 Georeferenzia</button>
-          <button id="gpsBtn" class="btn" style="flex:1;background:#0e7490;color:white" onclick="usaGPS()">📡 GPS</button>
-          <button class="btn btn-secondary" style="flex:1" onclick="clearAll()">✕</button>
-        </div>
-        <div class="info-blue" style="margin-top:8px;font-size:10px">
-          💡 Puoi anche cliccare direttamente sulla mappa per posizionare il punto
-        </div>
-      </div>
-    </div>
-
-    <!-- RISULTATI -->
-    <div id="risultatiPanel" style="display:none">
-      <div class="section-title">3. Comuni coinvolti per buffer</div>
-      <div class="tabs">
-        <button class="tab active" onclick="switchTab('comuni')">Comuni</button>
-        <button class="tab" onclick="switchTab('adempimenti')">Adempimenti</button>
-        <button class="tab" onclick="switchTab('legenda')">Buffer</button>
-      </div>
-
-
-      <div id="tabComuni">
-        <div id="comuniOutput" class="comuni-list"></div>
-      </div>
-      <div id="tabAdempimenti" style="display:none">
-        <div id="adempimentiOutput" class="adempimenti-list"></div>
-      </div>
-      <div id="tabLegenda" style="display:none">
-        <div class="buffer-legend" id="legendaOutput"></div>
-      </div>
-    </div>
-
-    <!-- NOTE -->
-    <div id="notePanel" style="display:none">
-      <div class="info-orange" id="noteOutput"></div>
-    </div>
-
-    <!-- EXPORT -->
-    <div id="exportPanel" style="display:none">
-      <div class="section-title">4. Esporta per QGIS / GIS</div>
-      <div class="card" style="display:flex;flex-direction:column;gap:6px">
-        <div style="font-size:10px;color:#6b7280;line-height:1.5;margin-bottom:2px">
-          Esporta il punto di esposizione, i buffer e i Comuni coinvolti in formato GIS.<br/>
-          In QGIS: <b>Layer → Aggiungi layer → Aggiungi layer vettoriale</b> → seleziona il file.
-        </div>
-        <button class="btn btn-green" onclick="esportaGeoJSON()">
-          ⬇ Scarica GeoJSON (QGIS / ArcGIS / GRASS)
-        </button>
-        <button class="btn" style="background:#e55300;color:white" onclick="esportaKML()">
-          ⬇ Scarica KML (Google Earth / QGIS)
-        </button>
-        <button class="btn" style="background:#0369a1;color:white" onclick="esportaCSV()">
-          ⬇ Scarica CSV coordinate (Excel / QGIS)
-        </button>
-        <div class="info-blue" style="font-size:10px;margin-top:2px">
-          💡 Il GeoJSON contiene: punto esposizione, 4 cerchi buffer (poligoni 64 vertici),
-          layer comuni coinvolti con PEC, distanza e categoria buffer.
-          Proiezione: WGS84 (EPSG:4326).
-        </div>
-        <div style="margin-top:6px;padding:8px;background:#f5f3ff;border:1px solid #7c3aed;border-radius:5px;font-size:10px;color:#5b21b6">
-          📱 <b>Installare su iPhone:</b> Aprire in Safari → toccare 
-          <b>Condividi (□↑)</b> → <b>Aggiungi a schermata Home</b> → <b>Aggiungi</b>.
-          Funziona offline dopo la prima apertura.
-        </div>
-      </div>
-    </div>
-
   </div>
 
-  <!-- MAP -->
-  <div id="map"></div>
+  <div class="info info-blue" style="font-size:10px">
+    💡 L'AI leggerà il PDF ed estrarrà automaticamente tutti i campi:<br/>
+    agente, date, luogo esposizione, classificazione, dati laboratorio.<br/>
+    I dati vengono elaborati localmente e non vengono salvati.
+  </div>
+
+  <div style="text-align:center;font-size:10px;color:var(--gm)">— oppure —</div>
+
+  <button class="btn btn-grey" onclick="inserisciManuale()">
+    ✏️ Inserisci i dati manualmente senza PDF
+  </button>
 </div>
 
+<!-- ════ STEP 2: VERIFICA DATI ════════════════════════════════════════ -->
+<div class="step-panel" id="step2">
+  <div class="sec">Verifica e completa i dati estratti</div>
+  <div id="extractedPreview"></div>
+
+  <div class="card">
+    <div class="sec" style="margin-bottom:8px">Dati del caso</div>
+
+    <div class="row2" style="margin-bottom:8px">
+      <div>
+        <label>Codice caso SISP</label>
+        <input type="text" id="f_codice" placeholder="SISP-WNV-2025-001"/>
+      </div>
+      <div>
+        <label>Data segnalazione</label>
+        <input type="date" id="f_dataseg"/>
+      </div>
+    </div>
+
+    <div class="row2" style="margin-bottom:8px">
+      <div>
+        <label>Agente</label>
+        <select id="f_agente">
+          <option value="WNV">West Nile Virus (WNV)</option>
+          <option value="USUV">Usutu Virus (USUV)</option>
+          <option value="WNV+USUV">Coinfezione WNV/USUV</option>
+        </select>
+      </div>
+      <div>
+        <label>Data esordio sintomi</label>
+        <input type="date" id="f_dataesordio"/>
+      </div>
+    </div>
+
+    <div style="margin-bottom:8px">
+      <label>Classificazione clinica</label>
+      <select id="f_classificazione">
+        <option value="Sintomatico Altro – Confermato">Sintomatico Altro – Confermato</option>
+        <option value="Solo Febbre – Confermato">Solo Febbre – Confermato</option>
+        <option value="Neuroinvasivo – Confermato">Neuroinvasivo – Confermato</option>
+        <option value="Sintomatico Altro – Probabile">Sintomatico Altro – Probabile</option>
+        <option value="Solo Febbre – Probabile">Solo Febbre – Probabile</option>
+        <option value="Neuroinvasivo – Probabile">Neuroinvasivo – Probabile</option>
+        <option value="Donatore – Confermato">Donatore – Confermato</option>
+        <option value="Asintomatico – Confermato">Asintomatico – Confermato</option>
+      </select>
+    </div>
+
+    <div class="row2" style="margin-bottom:8px">
+      <div>
+        <label>Comune residenza</label>
+        <input type="text" id="f_residenza" placeholder="es. Oristano"/>
+      </div>
+      <div>
+        <label>Esito attuale</label>
+        <select id="f_esito">
+          <option>In miglioramento</option>
+          <option>Guarito</option>
+          <option>Grave / UTI</option>
+          <option>Non noto</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-bottom:8px">
+      <label>Manifestazione clinica principale</label>
+      <input type="text" id="f_clinica" placeholder="es. Cefalea, radicolopatia"/>
+    </div>
+
+    <div>
+      <label>Note laboratorio (IgM, IgG, PCR, NAT)</label>
+      <textarea id="f_lab" rows="2" placeholder="es. IgM positivo su siero; PCR negativo; urine negativo"></textarea>
+    </div>
+  </div>
+
+  <!-- Scenario -->
+  <div class="card">
+    <label style="margin-bottom:6px">Scenario operativo</label>
+    <div class="sc-grid" id="scBtns2"></div>
+  </div>
+
+  <!-- Luoghi esposizione -->
+  <div class="card">
+    <div class="sec" style="margin-bottom:6px">Luoghi di esposizione
+      <span id="ptCount2" style="background:var(--bm);color:white;border-radius:10px;
+            padding:1px 6px;font-size:9px;margin-left:5px">0</span>
+    </div>
+
+    <div style="margin-bottom:6px">
+      <label>Cerca indirizzo</label>
+      <div class="geo-row">
+        <input type="text" id="addrIn2" placeholder="es. Via Giovanni XXIII 7, Solarussa"/>
+        <button onclick="geocode2()">Cerca</button>
+      </div>
+      <div id="geoMsg2" style="font-size:10px;color:var(--gm);margin-top:3px"></div>
+    </div>
+
+    <div class="row2" style="margin-bottom:6px">
+      <div><label>Latitudine</label><input type="number" id="lat2" step="0.0001" placeholder="39.5500"/></div>
+      <div><label>Longitudine</label><input type="number" id="lon2" step="0.0001" placeholder="8.9000"/></div>
+    </div>
+
+    <div style="margin-bottom:6px">
+      <label>Descrizione luogo</label>
+      <input type="text" id="desc2" placeholder="es. Domicilio abituale"/>
+    </div>
+
+    <label style="margin-bottom:3px">Probabilità esposizione</label>
+    <div class="prob-row">
+      <button class="prob-btn pb-alta"  id="pb2-alta"  onclick="selProb2('alta')">🔴 Alta</button>
+      <button class="prob-btn"          id="pb2-media" onclick="selProb2('media')">🟡 Media</button>
+      <button class="prob-btn"          id="pb2-bassa" onclick="selProb2('bassa')">🟢 Bassa</button>
+    </div>
+
+    <div class="btn-row" style="margin-top:7px">
+      <button class="btn btn-blue" onclick="aggiungiPunto2()">➕ Aggiungi</button>
+      <button id="gpsBtn2" class="btn btn-teal" onclick="usaGPS2()">📡 GPS</button>
+    </div>
+
+    <div id="ptList2" style="margin-top:8px;display:flex;flex-direction:column;gap:4px"></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-green" onclick="goStep3()">
+      ➡ Calcola buffer e Comuni
+    </button>
+    <button class="btn btn-grey" onclick="goStep(1)">← Indietro</button>
+  </div>
+</div>
+
+<!-- ════ STEP 3: BUFFER E COMUNI ══════════════════════════════════════ -->
+<div class="step-panel" id="step3">
+  <div class="tabs">
+    <button class="tab active" onclick="sw3('comuni')">Comuni</button>
+    <button class="tab" onclick="sw3('adempimenti')">Adempimenti</button>
+    <button class="tab" onclick="sw3('buffer')">Buffer</button>
+  </div>
+  <div id="t3comuni"></div>
+  <div id="t3adempimenti" style="display:none"></div>
+  <div id="t3buffer" style="display:none"></div>
+  <div class="info info-orange" id="t3note" style="margin-top:8px"></div>
+
+  <div class="btn-row" style="margin-top:10px">
+    <button class="btn btn-green" onclick="goStep(4)">➡ Genera comunicazioni PDF</button>
+    <button class="btn btn-grey" onclick="goStep(2)">← Modifica dati</button>
+  </div>
+</div>
+
+<!-- ════ STEP 4: GENERA PDF ═══════════════════════════════════════════ -->
+<div class="step-panel" id="step4">
+  <div class="sec">Comunicazioni da generare</div>
+  <div id="commList"></div>
+
+  <div style="margin-top:8px">
+    <button class="btn btn-green" id="btnGenAll" onclick="generaTutti()">
+      📄 Genera tutti i PDF
+    </button>
+  </div>
+
+  <div id="genProgress" style="display:none;margin-top:8px">
+    <div class="info info-blue" id="genMsg">Generazione in corso...</div>
+    <div class="progress" style="margin-top:6px">
+      <div class="progress-bar" id="genBar" style="width:0%"></div>
+    </div>
+  </div>
+
+  <div class="btn-row" style="margin-top:8px">
+    <button class="btn btn-grey" onclick="goStep(3)">← Modifica</button>
+    <button class="btn btn-blue" onclick="resetTutto()">🔄 Nuova segnalazione</button>
+  </div>
+</div>
+
+</div><!-- fine panel -->
+
+<!-- ══ MAPPA ════════════════════════════════════════════════════════════ -->
+<div id="map"></div>
+</div><!-- fine layout -->
+
 <script>
-// ── DATI COMUNI ───────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+// COSTANTI
+// ═══════════════════════════════════════════════════════════════════════
+const LETTERHEAD_B64 = '/9j/4AAQSkZJRgABAgAAAQABAAD/wAARCAUkA5wDACIAAREBAhEB/9sAQwAIBgYHBgUIBwcHCQkICgwUDQwLCwwZEhMPFB0aHx4dGhwcICQuJyAiLCMcHCg3KSwwMTQ0NB8nOT04MjwuMzQy/9sAQwEJCQkMCwwYDQ0YMiEcITIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIy/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMAAAERAhEAPwD3+iiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiuf8ReMtI8MgLeSs9wwysEQy5HqfQfWk2krsqEJTlywV35HQUV5zbfGDSZJwk9hdwxk/fBVsfUV3thqFpqlnHd2U6TQSD5XU/5waUZxlszavhK9DWrBos0UUVRzhRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRVXUNRstKtGu9Quoba3X70krhVH4mgBdRvF0/TLq8YZWCJpCPXAzXhfhfRJ/Hnim4mv538sZmuHHU5PCj0/oBXrmu6hZ6p4H1O7sLmK5t3tZNskThlPB7iuD+DX/H/q3/AFyj/ma5q65pxi9j3cqm6OGr14/EkkvK/wDX4HR6p8LNBudPeOxjktboL+7k8wsCf9oHtXG/DPWZdG8TTaTdSiO3n3K6u2Aki9/0I/KvWYfEei3GrPpUOqWj36Z3W6yguMdRj1rzHVfhPrNxqV5cW95aPHJI0ib2YMcnODxilVp8rUoI0y/G/WIVMPi6mjWjfR/1rbyPYAQQCDkHuKWvCvDniPV/BGvjTNT8wWgcJNA5yEB/iX+fHWvdFYMoZSCCMgjvW1OqprzPMx2AnhJK7vGWzXUWiiitDhCiiigAooooAKKKKACiikJAGSQB70ALRRRQAUUUUAFFFFABRRRQAUUUmRnGRnrigBaKKKACiiigAooooAKKKKACiiigAooo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UUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQA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rFNnRicfKeQOOK9HooA4hLPy7ay1GXSryxNtJB9pWeRGUIm4cBGIIUtndjoKo2+k628WmveaYZQuqSX9/J58RMpAbyWU7vuD5OvIwOK9FrP/ALC0vdn7DDtzny8fJn12fdz74oA43WrC91bRXjs9Ke6kntbki5DLt3s2QEDMAMk8PjOFHrWomn348Qx6jDazhXZGnguVjYcRbd8bg5Rx90qSQefrXXdKKAPPdK8N3QfRBqWhvKltps8E6SvE6K5dSo27yCSA3I/Gmaf4Y1OzsdEW00v7FfR6dcW9zcBoso7IAm4q2WwwB4zivRaKAPPn0nUJNEtZINEvYry1+zpc20lxHtuI43DNGmHw2eSC2M9O5ovdI1K7v9SuoNDuo1uLywuEXzYkJ8sjeWAkwcAdD7V6DRQBxM2h6o+j3tiImOpTal9pivsjCp5gZXznI2p8u32x05ostKnt5dSi1Hw/JfXZup7iC/VoxuVwdoVywdGCnZwOPpXbUUAeaSaFqk9lqkX9hTILoWMscMTxxpmNhvX7/YevXH0qxqfhR5B4laz8PIrXCwNY7PJX94o5Zfm+Q5A54zivQ6KAPObjRYNWufF9p/ZZlvZZYzBM+0tFIYUIIcnK7W54/DNSnSNbs7uW4Gn3NzAmrJcyxGZC1zH5AQsoL9nG7acdOK7a20y0s7y6u4EdZ7tg0zGRmDEDA4JwOABxirdAHALpV8J7/wD4p+Xy7vUnmTe0ZVFaAAuUD4JLAjnoTmm6X4eupW0o6nocsqQaIbSVbh4nUSgrgBS5HIB5x6Zr0GigDiNA0jUrFbOTVLGSZF0iK0EBZHMUi53j7xGHG3kH+HnFMOl62PCmn6XPYXE9zZXNrIJUuUw6rIGYcuCdijbz1I4ruqKAOd8Paa1hq+uPLp4ia4vGmjuAqYdCicZBz1B4roqKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigD/9k=';
+
 const COMUNI = [
-  { nome:"Arbus",              lat:39.5314, lon:8.5947,  dist:"Guspini",  pec:"protocollo.arbus@pec.comunas.it" },
-  { nome:"Barumini",           lat:39.7056, lon:9.0011,  dist:"Sanluri",  pec:"segreteria.barumini@pec.comunas.it" },
-  { nome:"Collinas",           lat:39.6369, lon:8.8897,  dist:"Sanluri",  pec:"info@pec.comune.collinas.vs.it" },
-  { nome:"Furtei",             lat:39.5614, lon:8.9781,  dist:"Sanluri",  pec:"protocollo@pec.comune.furtei.ca.it" },
-  { nome:"Genuri",             lat:39.6692, lon:8.9017,  dist:"Sanluri",  pec:"protocollo.genuri@pec.comunas.it" },
-  { nome:"Gesturi",            lat:39.7181, lon:9.0433,  dist:"Sanluri",  pec:"amministrazione.gesturi@pec.it" },
-  { nome:"Gonnosfanadiga",     lat:39.4958, lon:8.6578,  dist:"Guspini",  pec:"protocollo.gonnosfanadiga@servizipostacert.it" },
-  { nome:"Guspini",            lat:39.5400, lon:8.6289,  dist:"Guspini",  pec:"protocollo@pec.comune.guspini.vs.it" },
-  { nome:"Las Plassas",        lat:39.6678, lon:8.9617,  dist:"Sanluri",  pec:"protocollo.lasplassas@pec.comunas.it" },
-  { nome:"Lunamatrona",        lat:39.6419, lon:8.9325,  dist:"Sanluri",  pec:"protocollo@pec.comune.lunamatrona.ca.it" },
-  { nome:"Pabillonis",         lat:39.5922, lon:8.7350,  dist:"Guspini",  pec:"comune.pabillonis@postemailcertificata.it" },
-  { nome:"Pauli Arbarei",      lat:39.6531, lon:8.9697,  dist:"Sanluri",  pec:"comune.pauliarbarei@pec.it" },
-  { nome:"Samassi",            lat:39.4822, lon:8.9017,  dist:"Sanluri",  pec:"protocollo@pec.comune.samassi.ca.it" },
-  { nome:"San Gavino Monreale",lat:39.5511, lon:8.7917,  dist:"Guspini",  pec:"protocollo.sangavino@pec.comunas.it" },
-  { nome:"Sanluri",            lat:39.5592, lon:8.8978,  dist:"Sanluri",  pec:"protocollo@pec.comune.sanluri.vs.it" },
-  { nome:"Sardara",            lat:39.6197, lon:8.8183,  dist:"Guspini",  pec:"affarigenerali@pec.comune.sardara.vs.it" },
-  { nome:"Segariu",            lat:39.5458, lon:8.9475,  dist:"Sanluri",  pec:"protocollo@pec.comune.segariu.ca.it" },
-  { nome:"Serramanna",         lat:39.4231, lon:8.9211,  dist:"Sanluri",  pec:"area.amministrativa@pec.comune.serramanna.ca.it" },
-  { nome:"Serrenti",           lat:39.4961, lon:8.9883,  dist:"Sanluri",  pec:"protocollo.serrenti@pec.comunas.it" },
-  { nome:"Setzu",              lat:39.6919, lon:8.9528,  dist:"Sanluri",  pec:"protocollo@pec.comune.setzu.vs.it" },
-  { nome:"Siddi",              lat:39.6583, lon:8.9303,  dist:"Sanluri",  pec:"protocollo.siddi@servizipostacert.it" },
-  { nome:"Tuili",              lat:39.6983, lon:8.9703,  dist:"Sanluri",  pec:"protocollo.tuili@pec.comunas.it" },
-  { nome:"Turri",              lat:39.6972, lon:8.9242,  dist:"Sanluri",  pec:"protocollo.turri@pec.comunas.it" },
-  { nome:"Ussaramanna",        lat:39.6953, lon:8.9003,  dist:"Sanluri",  pec:"protocollo@pec.comune.ussaramanna.vs.it" },
-  { nome:"Villacidro",         lat:39.4567, lon:8.7378,  dist:"Guspini",  pec:"protocollo.villacidro@pec.it" },
-  { nome:"Villamar",           lat:39.6056, lon:8.9489,  dist:"Sanluri",  pec:"segreteria.villamar@legalmail.it" },
-  { nome:"Villanovaforru",     lat:39.6306, lon:8.9617,  dist:"Sanluri",  pec:"protocollo.villanovaforru@pec.comunas.it" },
-  { nome:"Villanovafranca",    lat:39.6483, lon:8.9822,  dist:"Sanluri",  pec:"protocollo@pec.comune.villanovafranca.ca.it" },
+  {nome:"Arbus",              lat:39.5314,lon:8.5947,dist:"Guspini",pec:"protocollo.arbus@pec.comunas.it"},
+  {nome:"Barumini",           lat:39.7056,lon:9.0011,dist:"Sanluri",pec:"segreteria.barumini@pec.comunas.it"},
+  {nome:"Collinas",           lat:39.6369,lon:8.8897,dist:"Sanluri",pec:"info@pec.comune.collinas.vs.it"},
+  {nome:"Furtei",             lat:39.5614,lon:8.9781,dist:"Sanluri",pec:"protocollo@pec.comune.furtei.ca.it"},
+  {nome:"Genuri",             lat:39.6692,lon:8.9017,dist:"Sanluri",pec:"protocollo.genuri@pec.comunas.it"},
+  {nome:"Gesturi",            lat:39.7181,lon:9.0433,dist:"Sanluri",pec:"amministrazione.gesturi@pec.it"},
+  {nome:"Gonnosfanadiga",     lat:39.4958,lon:8.6578,dist:"Guspini",pec:"protocollo.gonnosfanadiga@servizipostacert.it"},
+  {nome:"Guspini",            lat:39.5400,lon:8.6289,dist:"Guspini",pec:"protocollo@pec.comune.guspini.vs.it"},
+  {nome:"Las Plassas",        lat:39.6678,lon:8.9617,dist:"Sanluri",pec:"protocollo.lasplassas@pec.comunas.it"},
+  {nome:"Lunamatrona",        lat:39.6419,lon:8.9325,dist:"Sanluri",pec:"protocollo@pec.comune.lunamatrona.ca.it"},
+  {nome:"Pabillonis",         lat:39.5922,lon:8.7350,dist:"Guspini",pec:"comune.pabillonis@postemailcertificata.it"},
+  {nome:"Pauli Arbarei",      lat:39.6531,lon:8.9697,dist:"Sanluri",pec:"comune.pauliarbarei@pec.it"},
+  {nome:"Samassi",            lat:39.4822,lon:8.9017,dist:"Sanluri",pec:"protocollo@pec.comune.samassi.ca.it"},
+  {nome:"San Gavino Monreale",lat:39.5511,lon:8.7917,dist:"Guspini",pec:"protocollo.sangavino@pec.comunas.it"},
+  {nome:"Sanluri",            lat:39.5592,lon:8.8978,dist:"Sanluri",pec:"protocollo@pec.comune.sanluri.vs.it"},
+  {nome:"Sardara",            lat:39.6197,lon:8.8183,dist:"Guspini",pec:"affarigenerali@pec.comune.sardara.vs.it"},
+  {nome:"Segariu",            lat:39.5458,lon:8.9475,dist:"Sanluri",pec:"protocollo@pec.comune.segariu.ca.it"},
+  {nome:"Serramanna",         lat:39.4231,lon:8.9211,dist:"Sanluri",pec:"area.amministrativa@pec.comune.serramanna.ca.it"},
+  {nome:"Serrenti",           lat:39.4961,lon:8.9883,dist:"Sanluri",pec:"protocollo.serrenti@pec.comunas.it"},
+  {nome:"Setzu",              lat:39.6919,lon:8.9528,dist:"Sanluri",pec:"protocollo@pec.comune.setzu.vs.it"},
+  {nome:"Siddi",              lat:39.6583,lon:8.9303,dist:"Sanluri",pec:"protocollo.siddi@servizipostacert.it"},
+  {nome:"Tuili",              lat:39.6983,lon:8.9703,dist:"Sanluri",pec:"protocollo.tuili@pec.comunas.it"},
+  {nome:"Turri",              lat:39.6972,lon:8.9242,dist:"Sanluri",pec:"protocollo.turri@pec.comunas.it"},
+  {nome:"Ussaramanna",        lat:39.6953,lon:8.9003,dist:"Sanluri",pec:"protocollo@pec.comune.ussaramanna.vs.it"},
+  {nome:"Villacidro",         lat:39.4567,lon:8.7378,dist:"Guspini",pec:"protocollo.villacidro@pec.it"},
+  {nome:"Villamar",           lat:39.6056,lon:8.9489,dist:"Sanluri",pec:"segreteria.villamar@legalmail.it"},
+  {nome:"Villanovaforru",     lat:39.6306,lon:8.9617,dist:"Sanluri",pec:"protocollo.villanovaforru@pec.comunas.it"},
+  {nome:"Villanovafranca",    lat:39.6483,lon:8.9822,dist:"Sanluri",pec:"protocollo@pec.comune.villanovafranca.ca.it"},
 ];
 
-// ── SCENARI ───────────────────────────────────────────────────────────────
 const SCENARI = [
-  { id:"pool",      label:"🦟 Pool zanzare +",     color:"#0e7490", buffers:{ ento:200,  larv:500,  adult:0,    com:1000 }, adult_obblig:false, ordinanza:false },
-  { id:"uccello",   label:"🐦 Uccello morto +",    color:"#065f46", buffers:{ ento:500,  larv:1000, adult:0,    com:1000 }, adult_obblig:false, ordinanza:false },
-  { id:"equide",    label:"🐴 Equide infetto",     color:"#92400e", buffers:{ ento:500,  larv:500,  adult:0,    com:1000 }, adult_obblig:false, ordinanza:false },
-  { id:"febbre",    label:"🤒 Caso umano febbre",  color:"#1d4ed8", buffers:{ ento:200,  larv:500,  adult:500,  com:500  }, adult_obblig:false, ordinanza:false },
-  { id:"neuro",     label:"🧠 Caso neuroinvasivo", color:"#991b1b", buffers:{ ento:200,  larv:500,  adult:1000, com:2000 }, adult_obblig:true,  ordinanza:true  },
-  { id:"cluster",   label:"🔴 Cluster ≥2 casi",   color:"#7c3aed", buffers:{ ento:2000, larv:2000, adult:2000, com:2000 }, adult_obblig:true,  ordinanza:true  },
+  {id:"pool",   e:"🦟",lbl:"Pool zanzare +",   c:"#0e7490",b:{e:200, l:500, a:0,    co:1000},aobl:false,ord:false},
+  {id:"uccello",e:"🐦",lbl:"Uccello morto +",  c:"#065f46",b:{e:500, l:1000,a:0,    co:1000},aobl:false,ord:false},
+  {id:"equide", e:"🐴",lbl:"Equide infetto",   c:"#92400e",b:{e:500, l:500, a:0,    co:1000},aobl:false,ord:false},
+  {id:"febbre", e:"🤒",lbl:"Caso umano febbre",c:"#1d4ed8",b:{e:200, l:500, a:500,  co:500}, aobl:false,ord:false},
+  {id:"neuro",  e:"🧠",lbl:"Neuroinvasivo",    c:"#991b1b",b:{e:200, l:500, a:1000, co:2000},aobl:true, ord:true},
+  {id:"cluster",e:"🔴",lbl:"Cluster ≥2 casi", c:"#7c3aed",b:{e:2000,l:2000,a:2000, co:2000},aobl:true, ord:true},
 ];
 
-// ── STATO ─────────────────────────────────────────────────────────────────
-let currentScenario = SCENARI[3]; // default: caso umano febbre
-let marker = null;
-let circles = [];
-let comuniMarkers = [];
-let currentLat = null, currentLon = null;
+const PT_COLORS = ["#e63946","#2563a8","#15803d","#7c3aed","#b45309","#0e7490"];
+const PROB_LBL = {alta:"Alta",media:"Media",bassa:"Bassa"};
 
-// ── MAPPA ─────────────────────────────────────────────────────────────────
-const map = L.map('map').setView([39.58, 8.87], 10);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap contributors', maxZoom: 18
-}).addTo(map);
+// ═══════════════════════════════════════════════════════════════════════
+// STATO GLOBALE
+// ═══════════════════════════════════════════════════════════════════════
+let stato = {
+  sc: SCENARI[3],
+  prob2: 'alta',
+  punti: [],
+  mapLayers: [],
+  cerchi: [],
+  comuniCoinvolti: [],
+  datiCaso: {},
+  currentStep: 1,
+};
 
-// Aggiunge marker comuni sul layer separato
-const comuniLayer = L.layerGroup().addTo(map);
-COMUNI.forEach(c => {
-  const m = L.circleMarker([c.lat, c.lon], {
-    radius: 5, color: '#1a3a5c', fillColor: '#dbeafe',
-    fillOpacity: 0.9, weight: 1.5
-  }).addTo(comuniLayer)
-    .bindTooltip(`<b>${c.nome}</b><br/><small>${c.pec}</small>`, {permanent:false});
+// ═══════════════════════════════════════════════════════════════════════
+// MAPPA
+// ═══════════════════════════════════════════════════════════════════════
+const map = L.map('map').setView([39.58,8.87],10);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  attribution:'© OpenStreetMap',maxZoom:18}).addTo(map);
+
+COMUNI.forEach(c=>{
+  L.circleMarker([c.lat,c.lon],{radius:4,color:'#1a3a5c',fillColor:'#dbeafe',fillOpacity:.9,weight:1})
+   .addTo(map).bindTooltip(`<b>${c.nome}</b><br/><small>${c.pec}</small>`);
 });
 
-// Click su mappa per posizionare il punto
-map.on('click', function(e) {
-  document.getElementById('latInput').value = e.latlng.lat.toFixed(6);
-  document.getElementById('lonInput').value = e.latlng.lng.toFixed(6);
-  plotPoint();
+map.on('click',e=>{
+  document.getElementById('lat2').value = e.latlng.lat.toFixed(6);
+  document.getElementById('lon2').value = e.latlng.lng.toFixed(6);
 });
 
-// ── SCENARI BUTTONS ───────────────────────────────────────────────────────
-function renderScenarioBtns() {
-  const cont = document.getElementById('scenarioBtns');
-  cont.innerHTML = '';
-  SCENARI.forEach(s => {
-    const btn = document.createElement('button');
-    btn.className = 'scenario-btn';
-    btn.textContent = s.label;
-    btn.style.borderColor = s.color;
-    if (s.id === currentScenario.id) {
-      btn.style.background = s.color;
-      btn.style.color = 'white';
-    } else {
-      btn.style.background = 'white';
-      btn.style.color = s.color;
-    }
-    btn.onclick = () => { currentScenario = s; renderScenarioBtns(); if (currentLat) plotPoint(); };
-    cont.appendChild(btn);
+// ═══════════════════════════════════════════════════════════════════════
+// NAVIGAZIONE STEP
+// ═══════════════════════════════════════════════════════════════════════
+function goStep(n){
+  if(n>1 && stato.currentStep<n-1) return; // non saltare avanti
+  [1,2,3,4].forEach(i=>{
+    document.getElementById('step'+i).classList.toggle('active',i===n);
+    const d=document.getElementById('sd'+i);
+    if(i<n) d.className='step-dot done';
+    else if(i===n) d.className='step-dot active';
+    else d.className='step-dot todo';
+  });
+  stato.currentStep=n;
+}
+function inserisciManuale(){
+  renderScenarioBtns();
+  goStep(2);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// STEP 1 – UPLOAD PDF
+// ═══════════════════════════════════════════════════════════════════════
+function dragOver(e){e.preventDefault();document.getElementById('uploadZone').classList.add('drag')}
+function dragLeave(e){document.getElementById('uploadZone').classList.remove('drag')}
+function dropFile(e){
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('drag');
+  const file=e.dataTransfer.files[0];
+  if(file && file.type==='application/pdf') processFile(file);
+  else alert('Selezionare un file PDF.');
+}
+function handleFile(e){
+  const file=e.target.files[0];
+  if(file) processFile(file);
+}
+
+async function processFile(file){
+  const zone=document.getElementById('uploadZone');
+  zone.classList.add('loading');
+  document.getElementById('uploadIcon').textContent='⏳';
+  document.getElementById('uploadTitle').textContent='Lettura PDF in corso...';
+  document.getElementById('uploadSub').textContent='L\'AI sta estraendo i dati dalla scheda';
+  document.getElementById('uploadProgress').style.display='block';
+  animateProgress();
+
+  try{
+    // Convert PDF to base64
+    const b64 = await fileToBase64(file);
+    document.getElementById('progressBar').style.width='40%';
+
+    // Call Claude API
+    const extracted = await estraiDatiConClaude(b64);
+    document.getElementById('progressBar').style.width='90%';
+
+    // Populate form
+    popolaModulo(extracted);
+    document.getElementById('progressBar').style.width='100%';
+
+    setTimeout(()=>{
+      zone.classList.remove('loading');
+      document.getElementById('uploadIcon').textContent='✅';
+      document.getElementById('uploadTitle').textContent=file.name;
+      document.getElementById('uploadSub').textContent='Dati estratti con successo – verifica nel passo successivo';
+      renderScenarioBtns();
+      setTimeout(()=>goStep(2),800);
+    },500);
+
+  } catch(err){
+    zone.classList.remove('loading');
+    document.getElementById('uploadIcon').textContent='❌';
+    document.getElementById('uploadTitle').textContent='Errore lettura PDF';
+    document.getElementById('uploadSub').textContent=err.message+' – Prova ad inserire i dati manualmente';
+    console.error(err);
+  }
+}
+
+function animateProgress(){
+  let w=0;
+  const iv=setInterval(()=>{
+    w=Math.min(w+2,35);
+    document.getElementById('progressBar').style.width=w+'%';
+    if(w>=35) clearInterval(iv);
+  },80);
+}
+
+function fileToBase64(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result.split(',')[1]);
+    r.onerror=()=>rej(new Error('Errore lettura file'));
+    r.readAsDataURL(file);
+  });
+}
+
+async function estraiDatiConClaude(pdfB64){
+  const prompt = `Sei un assistente medico per il SISP (Servizio di Igiene e Sanità Pubblica) di ASL Mediocampidano, Sardegna.
+Analizza questa scheda di segnalazione WNV (West Nile Virus) / USUV (Usutu Virus) - Allegato 9 del PNA 2020-2025 - e estrai i seguenti dati in formato JSON.
+
+Restituisci SOLO un oggetto JSON valido senza markdown, senza backtick, senza testo aggiuntivo:
+
+{
+  "agente": "WNV o USUV o WNV+USUV",
+  "data_segnalazione": "DD/MM/YYYY",
+  "data_esordio": "DD/MM/YYYY",
+  "comune_residenza": "nome comune",
+  "luogo_esposizione_indirizzo": "indirizzo completo",
+  "luogo_esposizione_comune": "nome comune",
+  "luogo_esposizione_tipo": "Domicilio abituale o Altro domicilio",
+  "nazione_esposizione": "Italia o altro",
+  "classificazione": "categoria clinica (es. Sintomatico Altro, Solo Febbre, Neuroinvasivo, Donatore, Asintomatico)",
+  "stato_caso": "Confermato o Probabile",
+  "manifestazione_clinica": "descrizione sintomi principali",
+  "esito": "In miglioramento o Guarito o Grave o Deceduto o Non noto",
+  "lab_igm": "Positivo o Negativo o Dubbio o Non eseguito",
+  "lab_igg": "Positivo o Negativo o Dubbio o Non eseguito",
+  "lab_pcr": "Positivo o Negativo o Dubbio o Non eseguito",
+  "donatore": "Si o No o Non noto",
+  "scenario_suggerito": "febbre o neuro o pool o uccello o equide o cluster",
+  "note_aggiuntive": "eventuali osservazioni rilevanti"
+}
+
+Se un campo non è compilato o leggibile, usa il valore "Non noto".
+Per scenario_suggerito: usa "neuro" se la manifestazione è encefalite/meningite/poliradiculoneurite/paralisi flaccida; usa "febbre" per febbre/cefalea/sintomi generali; usa "donatore" se il caso è un donatore positivo asintomatico.`;
+
+  const response = await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-6',
+      max_tokens:1000,
+      messages:[{
+        role:'user',
+        content:[
+          {type:'document',source:{type:'base64',media_type:'application/pdf',data:pdfB64}},
+          {type:'text',text:prompt}
+        ]
+      }]
+    })
+  });
+
+  if(!response.ok){
+    const err=await response.json();
+    throw new Error('API error: '+(err.error?.message||response.status));
+  }
+
+  const data=await response.json();
+  const text=data.content.find(b=>b.type==='text')?.text||'{}';
+  const clean=text.replace(/```json|```/g,'').trim();
+  return JSON.parse(clean);
+}
+
+function popolaModulo(d){
+  stato.datiCaso=d;
+
+  // Converti data da DD/MM/YYYY a YYYY-MM-DD per input[type=date]
+  const toISO=s=>{
+    if(!s||s==='Non noto') return '';
+    const p=s.split('/');
+    if(p.length===3) return `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+    return '';
+  };
+
+  document.getElementById('f_agente').value =
+    d.agente==='WNV' ? 'WNV' : d.agente==='USUV' ? 'USUV' : 'WNV+USUV';
+  document.getElementById('f_dataseg').value     = toISO(d.data_segnalazione);
+  document.getElementById('f_dataesordio').value = toISO(d.data_esordio);
+  document.getElementById('f_residenza').value   = d.comune_residenza||'';
+  document.getElementById('f_clinica').value     = d.manifestazione_clinica||'';
+  document.getElementById('f_esito').value       = d.esito||'Non noto';
+
+  const classMap = {
+    'Sintomatico Altro': d.stato_caso==='Confermato'?'Sintomatico Altro – Confermato':'Sintomatico Altro – Probabile',
+    'Solo Febbre':       d.stato_caso==='Confermato'?'Solo Febbre – Confermato':'Solo Febbre – Probabile',
+    'Neuroinvasivo':     d.stato_caso==='Confermato'?'Neuroinvasivo – Confermato':'Neuroinvasivo – Probabile',
+    'Donatore':          'Donatore – Confermato',
+    'Asintomatico':      'Asintomatico – Confermato',
+  };
+  const cl = classMap[d.classificazione] || (d.classificazione+' – '+(d.stato_caso||'Confermato'));
+  const sel = document.getElementById('f_classificazione');
+  for(let o of sel.options){ if(o.value===cl){sel.value=cl;break;} }
+
+  const labTxt = [
+    d.lab_igm!=='Non noto'?`IgM: ${d.lab_igm}`:'',
+    d.lab_igg!=='Non noto'?`IgG: ${d.lab_igg}`:'',
+    d.lab_pcr!=='Non noto'?`PCR: ${d.lab_pcr}`:'',
+  ].filter(Boolean).join(' · ');
+  document.getElementById('f_lab').value = labTxt;
+
+  // Scenario suggerito
+  const scMap={febbre:'febbre',neuro:'neuro',pool:'pool',uccello:'uccello',equide:'equide',cluster:'cluster'};
+  const scId = scMap[d.scenario_suggerito]||'febbre';
+  stato.sc = SCENARI.find(s=>s.id===scId)||SCENARI[3];
+
+  // Pre-popola luogo esposizione se disponibile
+  if(d.luogo_esposizione_comune && d.luogo_esposizione_comune!=='Non noto'){
+    document.getElementById('addrIn2').value =
+      (d.luogo_esposizione_indirizzo && d.luogo_esposizione_indirizzo!=='Non noto'
+        ? d.luogo_esposizione_indirizzo+', '
+        : '') + d.luogo_esposizione_comune + ', Sardegna';
+    document.getElementById('desc2').value =
+      d.luogo_esposizione_tipo==='Domicilio abituale'
+        ? 'Domicilio abituale – '+d.luogo_esposizione_comune
+        : d.luogo_esposizione_tipo||'Luogo di esposizione principale';
+  }
+
+  // Preview campi estratti
+  renderExtractedPreview(d);
+}
+
+function renderExtractedPreview(d){
+  const fields=[
+    ['Agente',d.agente],['Data segnalazione',d.data_segnalazione],
+    ['Data esordio',d.data_esordio],['Comune residenza',d.comune_residenza],
+    ['Luogo esposizione',d.luogo_esposizione_indirizzo+', '+d.luogo_esposizione_comune],
+    ['Classificazione',d.classificazione+' – '+d.stato_caso],
+    ['Manifestazione',d.manifestazione_clinica],['Esito',d.esito],
+    ['IgM',d.lab_igm],['IgG',d.lab_igg],['PCR',d.lab_pcr],
+  ];
+  let h='<div class="sec" style="margin-bottom:6px">✅ Dati estratti dall\'AI – Verifica e correggi se necessario</div>';
+  fields.forEach(([l,v])=>{
+    const warn=!v||v==='Non noto';
+    h+=`<div class="field-extracted ${warn?'field-warn':''}">
+      <div class="field-label">${l}</div>
+      <div class="field-val">${v||'Non rilevato'}</div>
+    </div>`;
+  });
+  if(d.note_aggiuntive && d.note_aggiuntive!=='Non noto')
+    h+=`<div class="info info-orange" style="font-size:10px;margin-top:4px">
+      ⚑ ${d.note_aggiuntive}</div>`;
+  document.getElementById('extractedPreview').innerHTML=h;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// STEP 2 – SCENARI / PUNTI
+// ═══════════════════════════════════════════════════════════════════════
+function renderScenarioBtns(){
+  const el=document.getElementById('scBtns2'); el.innerHTML='';
+  SCENARI.forEach(s=>{
+    const b=document.createElement('button');
+    b.className='sc-btn';
+    b.textContent=s.e+' '+s.lbl;
+    b.style.borderColor=s.c;
+    if(s.id===stato.sc.id){b.style.background=s.c;b.style.color='white';}
+    else{b.style.background='white';b.style.color=s.c;}
+    b.onclick=()=>{stato.sc=s;renderScenarioBtns();};
+    el.appendChild(b);
   });
 }
 renderScenarioBtns();
 
-// ── GEOCODIFICA ───────────────────────────────────────────────────────────
-async function geocodeAddress() {
-  const addr = document.getElementById('addressInput').value.trim();
-  if (!addr) return;
-  const msg = document.getElementById('geocodeMsg');
-  msg.textContent = 'Ricerca in corso...';
+function selProb2(p){
+  stato.prob2=p;
+  ['alta','media','bassa'].forEach(x=>{
+    const b=document.getElementById('pb2-'+x);
+    b.className='prob-btn'+(x===p?' pb-'+x:'');
+  });
+}
+selProb2('alta');
 
-  try {
-    const q = encodeURIComponent(addr + ', Sardegna, Italia');
-    const url = `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=it`;
-    const r = await fetch(url, { headers: { 'User-Agent': 'SISP-ASL-MedioCampidano/1.0' } });
-    const data = await r.json();
-    if (data && data.length > 0) {
-      document.getElementById('latInput').value = parseFloat(data[0].lat).toFixed(6);
-      document.getElementById('lonInput').value = parseFloat(data[0].lon).toFixed(6);
-      msg.textContent = `✓ Trovato: ${data[0].display_name.substring(0,60)}...`;
-      msg.style.color = '#15803d';
-      plotPoint();
+async function geocode2(){
+  const addr=document.getElementById('addrIn2').value.trim();
+  if(!addr) return;
+  const msg=document.getElementById('geoMsg2');
+  msg.textContent='Ricerca...'; msg.style.color='var(--gm)';
+  try{
+    const q=encodeURIComponent(addr+', Sardegna, Italia');
+    const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=it`,
+      {headers:{'User-Agent':'SISP-ASL-MedioCampidano/3.0'}});
+    const data=await r.json();
+    if(data&&data.length){
+      document.getElementById('lat2').value=parseFloat(data[0].lat).toFixed(6);
+      document.getElementById('lon2').value=parseFloat(data[0].lon).toFixed(6);
+      if(!document.getElementById('desc2').value)
+        document.getElementById('desc2').value=addr;
+      msg.textContent='✓ '+data[0].display_name.substring(0,50)+'...';
+      msg.style.color='#15803d';
+      map.setView([parseFloat(data[0].lat),parseFloat(data[0].lon)],14);
     } else {
-      msg.textContent = '⚠ Indirizzo non trovato. Inserire le coordinate manualmente.';
-      msg.style.color = '#b45309';
+      msg.textContent='⚠ Non trovato. Inserire coordinate manualmente.';
+      msg.style.color='var(--or)';
     }
-  } catch(e) {
-    msg.textContent = '⚠ Errore geocodifica. Inserire le coordinate manualmente.';
-    msg.style.color = '#991b1b';
+  } catch(e){
+    msg.textContent='⚠ Errore connessione.'; msg.style.color='var(--rd)';
   }
 }
-
-document.getElementById('addressInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') geocodeAddress();
-});
-
-// ── DISTANZA tra due punti (Haversine, metri) ─────────────────────────────
-function distanza(lat1, lon1, lat2, lon2) {
-  const R = 6371000;
-  const dLat = (lat2-lat1) * Math.PI/180;
-  const dLon = (lon2-lon1) * Math.PI/180;
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-
-// ── PLOT POINT + BUFFER ───────────────────────────────────────────────────
-function plotPoint() {
-  const lat = parseFloat(document.getElementById('latInput').value);
-  const lon = parseFloat(document.getElementById('lonInput').value);
-  if (isNaN(lat) || isNaN(lon)) {
-    alert('Inserire coordinate valide (latitudine e longitudine).');
-    return;
-  }
-
-  currentLat = lat; currentLon = lon;
-  const desc = document.getElementById('descInput').value || 'Luogo di esposizione';
-  const sc = currentScenario;
-
-  // Rimuovi layers precedenti
-  clearLayers();
-
-  // Marker principale
-  const icon = L.divIcon({
-    html: `<div style="background:${sc.color};width:18px;height:18px;border-radius:50%;border:3px solid white;box-shadow:0 0 6px rgba(0,0,0,0.4)"></div>`,
-    className: '', iconSize:[18,18], iconAnchor:[9,9]
-  });
-  marker = L.marker([lat, lon], {icon})
-    .addTo(map)
-    .bindPopup(`<b>${desc}</b><br/><small>${sc.label}</small><br/><small>Lat: ${lat.toFixed(6)} Lon: ${lon.toFixed(6)}</small>`)
-    .openPopup();
-
-  // Buffer circles (dal più esterno al più interno per sovrapposizione corretta)
-  const b = sc.buffers;
-  const circleConfigs = [
-    { r: b.com,   color:'#6d28d9', fill:'#e9d5ff', label:'Comunicazione Sindaci', opacity:0.08 },
-    { r: b.adult, color:'#7c3aed', fill:'#ede9fe', label:'Buffer adulticida',      opacity:0.12 },
-    { r: b.larv,  color:'#15803d', fill:'#bbf7d0', label:'Buffer larvicida',       opacity:0.15 },
-    { r: b.ento,  color:'#0e7490', fill:'#a5f3fc', label:'Monitor. entomologico',  opacity:0.20 },
-  ];
-
-  circleConfigs.forEach(cfg => {
-    if (cfg.r > 0) {
-      const c = L.circle([lat, lon], {
-        radius: cfg.r,
-        color: cfg.color, weight: 2,
-        fillColor: cfg.fill, fillOpacity: cfg.opacity
-      }).addTo(map);
-      c.bindTooltip(`${cfg.label}: ${cfg.r >= 1000 ? (cfg.r/1000).toFixed(1)+' km' : cfg.r+' m'}`, {sticky:true});
-      circles.push(c);
-    }
-  });
-
-  // Fit mappa
-  const maxR = Math.max(b.com, b.larv, b.adult, b.ento);
-  map.fitBounds(L.circle([lat, lon], {radius: maxR}).getBounds().pad(0.1));
-
-  // Calcola comuni coinvolti
-  calcolaComuni(lat, lon);
-
-  // Mostra pannello risultati
-  document.getElementById('risultatiPanel').style.display = 'block';
-  document.getElementById('notePanel').style.display = 'block';
-  document.getElementById('exportPanel').style.display = 'block';
-}
-
-function catLabel(cat) {
-  return { ento:'Monitor. entomologico', larv:'Buffer larvicida', adult:'Buffer adulticida', com:'Comunicazione Sindaco' }[cat] || '';
-}
-
-// ── RENDER COMUNI ─────────────────────────────────────────────────────────
-function renderComuni(risultati) {
-  const out = document.getElementById('comuniOutput');
-  if (risultati.length === 0) {
-    out.innerHTML = '<p style="color:#6b7280;font-size:12px;padding:8px">Nessun comune del Medio Campidano nell\'area dei buffer definiti.</p>';
-    return;
-  }
-
-  const groups = { ento:[], larv:[], adult:[], com:[] };
-  risultati.forEach(c => groups[c.cat].push(c));
-
-  const catConfigs = [
-    { key:'ento',  label:'Monitor. entomologico', tagClass:'tag-esposizione', desc:'Trappole nell\'area' },
-    { key:'larv',  label:'Buffer larvicida',       tagClass:'tag-larvicida',   desc:'Larvicidi obbligatori' },
-    { key:'adult', label:'Buffer adulticida',      tagClass:'tag-adulticida',  desc:'Adulticidi prescritti' },
-    { key:'com',   label:'Comunicazione Sindaco',  tagClass:'tag-allerta',     desc:'Comunicazione precauzionale' },
-  ];
-
-  let html = '';
-  catConfigs.forEach(cfg => {
-    if (groups[cfg.key].length > 0) {
-      html += `<div style="margin-bottom:8px">
-        <div style="font-size:10px;font-weight:700;color:#374151;margin-bottom:4px">${cfg.label} — ${cfg.desc}</div>`;
-      groups[cfg.key].forEach(c => {
-        const d = c.dist_m >= 1000 ? (c.dist_m/1000).toFixed(2)+' km' : c.dist_m+' m';
-        html += `<span class="comune-tag ${cfg.tagClass}">${c.nome} <span style="font-weight:400">(${d})</span></span>`;
-      });
-      html += '</div>';
-    }
-  });
-
-  // Tabella PEC
-  html += `<div style="margin-top:10px">
-    <div style="font-size:10px;font-weight:700;color:#374151;margin-bottom:4px">PEC dei Comuni interessati</div>
-    <table style="width:100%;border-collapse:collapse;font-size:10px">
-      <tr style="background:#f3f4f6"><th style="padding:4px;text-align:left">Comune</th><th style="padding:4px;text-align:left">PEC Protocollo</th><th style="padding:4px">Dist.</th></tr>`;
-  risultati.forEach(c => {
-    const d = c.dist_m >= 1000 ? (c.dist_m/1000).toFixed(2)+' km' : c.dist_m+' m';
-    html += `<tr style="border-bottom:1px solid #f3f4f6">
-      <td style="padding:3px 4px;font-weight:600">${c.nome}</td>
-      <td style="padding:3px 4px;font-size:9px;color:#2563a8">${c.pec}</td>
-      <td style="padding:3px 4px;text-align:center">${d}</td></tr>`;
-  });
-  html += '</table></div>';
-
-  out.innerHTML = html;
-}
-
-// ── RENDER ADEMPIMENTI ────────────────────────────────────────────────────
-function renderAdempimenti(risultati) {
-  const sc = currentScenario;
-  const nomi = risultati.map(c => c.nome);
-  const esposti = risultati.filter(c => ['ento','larv','adult'].includes(c.cat)).map(c=>c.nome);
-  const allerta = risultati.filter(c => c.cat === 'com').map(c=>c.nome);
-
-  const urgenti = [
-    "Notifica PREMAL (D.M. 7/3/2022) + portale ISS arbo entro 24h da positività",
-    "Trasmissione scheda All.9 PNA a OER Sardegna (san.oer@regione.sardegna.it)",
-  ];
-  if (['febbre','neuro','cluster'].includes(sc.id)) {
-    urgenti.push("Comunicazione al Servizio Veterinario ASL per indagine congiunta entro 24h");
-    urgenti.push("Sollecito campioni a Lab. Reg. AOU Cagliari (laboratorio@aoucagliari.it)");
-  }
-
-  const standard = [];
-  if (esposti.length > 0) {
-    standard.push(`Lettera operativa ai Sindaci: ${esposti.join(', ')} — richiesta interventi larvicidi${sc.adult_obblig ? ' e adulticidi' : ''} (buffer di competenza)`);
-  }
-  if (allerta.length > 0) {
-    standard.push(`Comunicazione di allerta ai Sindaci: ${allerta.join(', ')} — nota precauzionale`);
-  }
-  if (sc.ordinanza) {
-    standard.push(`Proposta di ORDINANZA CONTINGIBILE E URGENTE (art. 54 D.Lgs. 267/2000) ai Sindaci dei Comuni: ${esposti.join(', ')}`);
-  }
-  standard.push("Comunicazione a Struttura Reg. Coordinamento Trasfusionale e Centro Reg. Trapianti");
-  standard.push("Aggiornamento PREMAL + portale ISS arbo + OER a 30 giorni dall'esordio");
-
-  let html = '<div style="font-size:10px;font-weight:700;color:#991b1b;margin-bottom:6px">⏱ URGENTI (entro 24h)</div>';
-  urgenti.forEach(a => {
-    html += `<div class="adempimento urgente">• ${a}</div>`;
-  });
-  html += '<div style="font-size:10px;font-weight:700;color:#2563a8;margin:8px 0 6px">📋 STANDARD</div>';
-  standard.forEach(a => {
-    html += `<div class="adempimento standard">• ${a}</div>`;
-  });
-
-  document.getElementById('adempimentiOutput').innerHTML = html;
-}
-
-// ── RENDER LEGENDA ────────────────────────────────────────────────────────
-function renderLegenda() {
-  const sc = currentScenario;
-  const b = sc.buffers;
-  const items = [
-    { color: sc.color, label: `Luogo di esposizione / segnale` },
-    { color: '#0e7490', label: `Monitoraggio entomologico: ${b.ento} m` },
-    { color: '#15803d', label: `Buffer larvicida: ${b.larv >= 1000 ? (b.larv/1000).toFixed(1)+' km' : b.larv+' m'}` },
-    { color: '#7c3aed', label: b.adult > 0 ? `Buffer adulticida: ${b.adult >= 1000 ? (b.adult/1000).toFixed(1)+' km' : b.adult+' m'}${sc.adult_obblig ? ' (OBBLIGATORIO)' : ''}` : 'Adulticida: non indicato in questo scenario' },
-    { color: '#6d28d9', label: `Comunicazione Sindaci: ${b.com >= 1000 ? (b.com/1000).toFixed(1)+' km' : b.com+' m'}` },
-  ];
-  document.getElementById('legendaOutput').innerHTML = items.map(i =>
-    `<div class="legend-item"><div class="legend-dot" style="background:${i.color}"></div><span>${i.label}</span></div>`
-  ).join('');
-}
-
-// ── RENDER NOTE ───────────────────────────────────────────────────────────
-function renderNote() {
-  const sc = currentScenario;
-  const notes = {
-    pool: "Pool zanzare positive: il buffer si calcola dal sito della trappola, non da abitazioni. Adulticidi NON indicati. Nessun obbligo di notifica PREMAL (caso umano assente).",
-    uccello: "Uccello morto: il buffer si calcola dal sito di ritrovamento. Adulticidi NON indicati. Nessun obbligo di notifica PREMAL. Coordinare con IZS Sardegna.",
-    equide: "Equide infetto: il buffer si calcola dalla sede dell'allevamento. Adulticidi NON indicati. Competenza primaria: Servizio Veterinario ASL.",
-    febbre: "Caso umano febbrile: il buffer si calcola dal LUOGO DI ESPOSIZIONE (non dalla residenza). Adulticidi su valutazione SISP. Notifica PREMAL obbligatoria.",
-    neuro: "Caso neuroinvasivo: RISPOSTA MASSIMA. Adulticidi OBBLIGATORI. Ordinanza sindacale contingibile raccomandata. Buffer comunicazione esteso a 2 km.",
-    cluster: "Cluster ≥2 casi: buffer calcolato sull'area tra le abitazioni più esterne (PNA All.8). Coordinamento regionale se intercomunale. Buffer in figura rappresentativo (adattare all'area reale del cluster).",
-  };
-  document.getElementById('noteOutput').innerHTML = `<b>⚑ Nota:</b> ${notes[sc.id]}`;
-}
-
-// ── TAB SWITCHING ─────────────────────────────────────────────────────────
-function switchTab(tab) {
-  ['comuni','adempimenti','legenda'].forEach(t => {
-    document.getElementById('tab'+t.charAt(0).toUpperCase()+t.slice(1)).style.display = t===tab ? 'block' : 'none';
-  });
-  document.querySelectorAll('.tab').forEach((b,i) => {
-    const tabs = ['comuni','adempimenti','legenda'];
-    b.classList.toggle('active', tabs[i]===tab);
-  });
-}
-
-// ── CLEAR ─────────────────────────────────────────────────────────────────
-function clearLayers() {
-  if (marker) { map.removeLayer(marker); marker = null; }
-  circles.forEach(c => map.removeLayer(c)); circles = [];
-  comuniMarkers.forEach(m => map.removeLayer(m)); comuniMarkers = [];
-}
-
-function clearAll() {
-  clearLayers();
-  ultimiComuniCoinvolti = [];
-  currentLat = null; currentLon = null;
-  document.getElementById('latInput').value = '';
-  document.getElementById('lonInput').value = '';
-  document.getElementById('descInput').value = '';
-  document.getElementById('addressInput').value = '';
-  document.getElementById('geocodeMsg').textContent = '';
-  document.getElementById('risultatiPanel').style.display = 'none';
-  document.getElementById('notePanel').style.display = 'none';
-  document.getElementById('exportPanel').style.display = 'none';
-  map.setView([39.58, 8.87], 10);
-}
-
-// ── UTILITÀ GEOMETRICHE ────────────────────────────────────────────────────
-// Genera poligono approssimato di un cerchio (N vertici) in GeoJSON
-function circleToPolygon(lat, lon, radiusM, nPts) {
-  const pts = [];
-  const R = 6371000;
-  for (let i = 0; i <= nPts; i++) {
-    const angle = (2 * Math.PI * i) / nPts;
-    const dLat = (radiusM / R) * (180 / Math.PI) * Math.cos(angle);
-    const dLon = (radiusM / R) * (180 / Math.PI) * Math.sin(angle) / Math.cos(lat * Math.PI / 180);
-    pts.push([lon + dLon, lat + dLat]);
-  }
-  pts.push(pts[0]); // chiudi il poligono
-  return pts;
-}
-
-// ── STATO GLOBALE COMUNI COINVOLTI ─────────────────────────────────────────
-let ultimiComuniCoinvolti = [];
-
-// Sovrascriviamo calcolaComuni per salvare i risultati
-function calcolaComuni(lat, lon) {
-  const sc = currentScenario;
-  const b = sc.buffers;
-  const risultati = COMUNI.map(c => {
-    const d = distanza(lat, lon, c.lat, c.lon);
-    let cat = null;
-    if (d <= b.ento) cat = 'ento';
-    else if (d <= b.larv) cat = 'larv';
-    else if (sc.adult_obblig && b.adult > 0 && d <= b.adult) cat = 'adult';
-    else if (d <= b.com) cat = 'com';
-    return { ...c, dist_m: Math.round(d), cat };
-  }).filter(c => c.cat !== null).sort((a,b) => a.dist_m - b.dist_m);
-  ultimiComuniCoinvolti = risultati;
-
-  // Aggiungi markers
-  risultati.forEach(c => {
-    const colors = { ento:'#0e7490', larv:'#15803d', adult:'#7c3aed', com:'#b45309' };
-    const m = L.circleMarker([c.lat, c.lon], {
-      radius: 8, color: 'white', fillColor: colors[c.cat],
-      fillOpacity: 1, weight: 2
-    }).addTo(map)
-      .bindPopup(`<b>${c.nome}</b><br/>Distanza: ${c.dist_m >= 1000 ? (c.dist_m/1000).toFixed(2)+' km' : c.dist_m+' m'}<br/>Categoria: ${catLabel(c.cat)}<br/><small>PEC: ${c.pec}</small>`);
-    comuniMarkers.push(m);
-  });
-
-  renderComuni(risultati);
-  renderAdempimenti(risultati);
-  renderLegenda();
-  renderNote();
-}
-
-// ── EXPORT GEOJSON ────────────────────────────────────────────────────────
-function esportaGeoJSON() {
-  if (!currentLat) { alert('Georeferenziare prima un punto.'); return; }
-  const sc = currentScenario;
-  const b = sc.buffers;
-  const desc = document.getElementById('descInput').value || 'Luogo di esposizione WNV';
-  const dataOra = new Date().toISOString().slice(0,16).replace('T',' ');
-
-  const features = [];
-
-  // 1. Punto di esposizione
-  features.push({
-    type: "Feature",
-    geometry: { type: "Point", coordinates: [currentLon, currentLat] },
-    properties: {
-      tipo: "Luogo esposizione",
-      descrizione: desc,
-      scenario: sc.label,
-      data_ora: dataOra,
-      operatore: "SISP ASL Mediocampidano",
-      lat: currentLat,
-      lon: currentLon
-    }
-  });
-
-  // 2. Buffer come poligoni
-  const bufferLayers = [
-    { key:'ento',  r:b.ento,  label:'Monitoraggio entomologico', colore:'#0e7490' },
-    { key:'larv',  r:b.larv,  label:'Buffer larvicida',          colore:'#15803d' },
-    { key:'adult', r:b.adult, label:'Buffer adulticida',         colore:'#7c3aed' },
-    { key:'com',   r:b.com,   label:'Comunicazione Sindaci',     colore:'#6d28d9' },
-  ];
-  bufferLayers.forEach(bl => {
-    if (bl.r > 0) {
-      features.push({
-        type: "Feature",
-        geometry: { type: "Polygon", coordinates: [circleToPolygon(currentLat, currentLon, bl.r, 64)] },
-        properties: {
-          tipo: "Buffer",
-          nome_buffer: bl.label,
-          raggio_m: bl.r,
-          raggio_km: (bl.r/1000).toFixed(3),
-          colore_suggerito: bl.colore,
-          scenario: sc.label,
-          adulticida_obbligatorio: sc.adult_obblig ? "SI" : "NO",
-          ordinanza_contingibile: sc.ordinanza ? "SI" : "NO",
-        }
-      });
-    }
-  });
-
-  // 3. Comuni coinvolti
-  ultimiComuniCoinvolti.forEach(c => {
-    const catDescrizioni = {
-      ento: 'Monitoraggio entomologico (area immediata)',
-      larv: 'Intervento larvicida obbligatorio',
-      adult: 'Intervento adulticida prescritto',
-      com: 'Comunicazione precauzionale al Sindaco'
-    };
-    features.push({
-      type: "Feature",
-      geometry: { type: "Point", coordinates: [c.lon, c.lat] },
-      properties: {
-        tipo: "Comune coinvolto",
-        nome: c.nome,
-        categoria_buffer: catDescrizioni[c.cat] || c.cat,
-        codice_categoria: c.cat,
-        distanza_m: c.dist_m,
-        distanza_km: (c.dist_m/1000).toFixed(3),
-        distretto_sisp: c.dist,
-        pec_protocollo: c.pec,
-        adempimento: c.cat === 'com'
-          ? 'Comunicazione informativa al Sindaco - nessun intervento vettoriale diretto'
-          : 'Lettera operativa al Sindaco con indicazioni tecniche ' + (sc.ordinanza ? '+ proposta ordinanza contingibile' : ''),
-        scenario: sc.label,
-        data_ora: dataOra,
-        fonte_pec: 'comuni-italiani.it / sardegnaautonomie.it (giugno 2026)'
-      }
-    });
-  });
-
-  const geojson = {
-    type: "FeatureCollection",
-    crs: { type: "name", properties: { name: "urn:ogc:def:crs:OGC:1.3:CRS84" } },
-    metadata: {
-      titolo: "WNV Georeferenziazione Buffer - SISP ASL Mediocampidano",
-      scenario: sc.label,
-      data_generazione: dataOra,
-      proiezione: "WGS84 (EPSG:4326)",
-      fonte: "PNA 2020-2025, Piano Reg. WND/USUTU agg. 2026",
-      note_qgis: "Importare in QGIS: Layer > Aggiungi layer > Aggiungi layer vettoriale. Stile suggerito: buffer per riempimento trasparente, comuni per colore categoria."
-    },
-    features
-  };
-
-  const nomeFile = `WNV_buffer_${sc.id}_${dataOra.replace(/[: ]/g,'-')}.geojson`;
-  scaricaFile(JSON.stringify(geojson, null, 2), nomeFile, 'application/geo+json');
-}
-
-// ── EXPORT KML ────────────────────────────────────────────────────────────
-function esportaKML() {
-  if (!currentLat) { alert('Georeferenziare prima un punto.'); return; }
-  const sc = currentScenario;
-  const b = sc.buffers;
-  const desc = document.getElementById('descInput').value || 'Luogo di esposizione WNV';
-  const dataOra = new Date().toISOString().slice(0,16).replace('T',' ');
-
-  const colorMap = { ento:'7f0e7490', larv:'7f15803d', adult:'7f7c3aed', com:'7f6d28d9' };
-  const labelMap = { ento:'Monitoraggio entomologico', larv:'Buffer larvicida', adult:'Buffer adulticida', com:'Comunicazione Sindaci' };
-
-  let placemarksBuffer = '';
-  const bufferLayers = [
-    { key:'ento',  r:b.ento  },
-    { key:'larv',  r:b.larv  },
-    { key:'adult', r:b.adult },
-    { key:'com',   r:b.com   },
-  ];
-  bufferLayers.forEach(bl => {
-    if (bl.r > 0) {
-      const pts = circleToPolygon(currentLat, currentLon, bl.r, 64);
-      const coords = pts.map(p => `${p[0]},${p[1]},0`).join(' ');
-      placemarksBuffer += `
-    <Placemark>
-      <name>${labelMap[bl.key]} (${bl.r >= 1000 ? (bl.r/1000).toFixed(1)+' km' : bl.r+' m'})</name>
-      <description>Scenario: ${sc.label} | Raggio: ${bl.r} m</description>
-      <Style><PolyStyle><color>${colorMap[bl.key]}</color><outline>1</outline></PolyStyle></Style>
-      <Polygon><outerBoundaryIs><LinearRing><coordinates>${coords}</coordinates></LinearRing></outerBoundaryIs></Polygon>
-    </Placemark>`;
-    }
-  });
-
-  let placemarksComuni = '';
-  ultimiComuniCoinvolti.forEach(c => {
-    placemarksComuni += `
-    <Placemark>
-      <name>${c.nome}</name>
-      <description><![CDATA[
-        <b>Categoria:</b> ${labelMap[c.cat]}<br/>
-        <b>Distanza:</b> ${c.dist_m >= 1000 ? (c.dist_m/1000).toFixed(2)+' km' : c.dist_m+' m'}<br/>
-        <b>Distretto SISP:</b> ${c.dist}<br/>
-        <b>PEC:</b> ${c.pec}
-      ]]></description>
-      <Point><coordinates>${c.lon},${c.lat},0</coordinates></Point>
-    </Placemark>`;
-  });
-
-  const kml = `<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-<Document>
-  <name>WNV Buffer - ${sc.label} - ${dataOra}</name>
-  <description>SISP ASL Mediocampidano | PNA 2020-2025 | Piano Reg. WND/USUTU agg. 2026</description>
-
-  <Folder>
-    <name>Punto di esposizione</name>
-    <Placemark>
-      <name>${desc}</name>
-      <description>Scenario: ${sc.label} | Data: ${dataOra}</description>
-      <Point><coordinates>${currentLon},${currentLat},0</coordinates></Point>
-    </Placemark>
-  </Folder>
-
-  <Folder>
-    <name>Buffer operativi</name>${placemarksBuffer}
-  </Folder>
-
-  <Folder>
-    <name>Comuni coinvolti</name>${placemarksComuni}
-  </Folder>
-</Document>
-</kml>`;
-
-  const nomeFile = `WNV_buffer_${sc.id}_${dataOra.replace(/[: ]/g,'-')}.kml`;
-  scaricaFile(kml, nomeFile, 'application/vnd.google-earth.kml+xml');
-}
-
-// ── EXPORT CSV ────────────────────────────────────────────────────────────
-function esportaCSV() {
-  if (!currentLat) { alert('Georeferenziare prima un punto.'); return; }
-  const sc = currentScenario;
-  const desc = document.getElementById('descInput').value || 'Luogo di esposizione WNV';
-  const dataOra = new Date().toISOString().slice(0,16).replace('T',' ');
-  const b = sc.buffers;
-
-  const catDescrizioni = {
-    ento: 'Monitoraggio entomologico',
-    larv: 'Buffer larvicida',
-    adult: 'Buffer adulticida',
-    com: 'Comunicazione Sindaco'
-  };
-
-  let csv = 'TIPO;NOME;LAT;LON;CATEGORIA_BUFFER;DISTANZA_M;DISTANZA_KM;DISTRETTO_SISP;PEC_PROTOCOLLO;SCENARIO;DATA_ORA;NOTE\n';
-
-  // Punto di esposizione
-  csv += `ESPOSIZIONE;"${desc}";${currentLat};${currentLon};;;;;;;${sc.label};${dataOra};"Luogo esposizione georeferenziato"\n`;
-
-  // Info buffer (come righe di metadato)
-  const bufferInfo = [
-    { k:'ento', r:b.ento,  l:'Monitoraggio entomologico' },
-    { k:'larv', r:b.larv,  l:'Buffer larvicida' },
-    { k:'adult',r:b.adult, l:'Buffer adulticida' },
-    { k:'com',  r:b.com,   l:'Comunicazione Sindaci' },
-  ];
-  bufferInfo.forEach(bi => {
-    if (bi.r > 0) {
-      csv += `BUFFER;"${bi.l}";${currentLat};${currentLon};${bi.l};${bi.r};${(bi.r/1000).toFixed(3)};;;;${sc.label};${dataOra};"Raggio ${bi.r} m"\n`;
-    }
-  });
-
-  // Comuni coinvolti
-  ultimiComuniCoinvolti.forEach(c => {
-    csv += `COMUNE;"${c.nome}";${c.lat};${c.lon};"${catDescrizioni[c.cat] || c.cat}";${c.dist_m};${(c.dist_m/1000).toFixed(3)};"${c.dist}";"${c.pec}";${sc.label};${dataOra};"PEC verificata giugno 2026"\n`;
-  });
-
-  const nomeFile = `WNV_buffer_${sc.id}_${dataOra.replace(/[: ]/g,'-')}.csv`;
-  scaricaFile('\uFEFF' + csv, nomeFile, 'text/csv;charset=utf-8');
-  // \uFEFF = BOM UTF-8 per compatibilità Excel italiano (separatore punto-e-virgola)
-}
-
-// ── HELPER DOWNLOAD ───────────────────────────────────────────────────────
-function scaricaFile(contenuto, nomeFile, mimeType) {
-  const blob = new Blob([contenuto], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = nomeFile;
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-// ── SERVICE WORKER + PWA ───────────────────────────────────────────────────
-let deferredInstallPrompt = null;
-
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').then(reg => {
-      console.log('[PWA] Service Worker registrato:', reg.scope);
-    }).catch(err => {
-      console.warn('[PWA] SW registration failed:', err);
-    });
-  });
-}
-
-// Intercetta prompt installazione Android/Desktop
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  deferredInstallPrompt = e;
-  document.getElementById('installBanner').style.display = 'flex';
-});
-
-function installPWA() {
-  if (deferredInstallPrompt) {
-    deferredInstallPrompt.prompt();
-    deferredInstallPrompt.userChoice.then(() => {
-      deferredInstallPrompt = null;
-      document.getElementById('installBanner').style.display = 'none';
-    });
-  } else {
-    // iOS: istruzioni manuali
-    alert('Su iPhone:\n1. Tocca il pulsante Condividi (□↑) in Safari\n2. Scorri e tocca "Aggiungi a schermata Home"\n3. Tocca "Aggiungi"\n\nL\'app sarà disponibile come icona sulla schermata Home.');
-  }
-}
-
-// Banner offline
-window.addEventListener('online',  () => document.getElementById('offlineBanner').style.display = 'none');
-window.addEventListener('offline', () => document.getElementById('offlineBanner').style.display = 'block');
-
-// ── GPS NATIVO (iOS/Android) ────────────────────────────────────────────────
-function usaGPS() {
-  if (!navigator.geolocation) {
-    alert('GPS non disponibile su questo dispositivo.');
-    return;
-  }
-  const btn = document.getElementById('gpsBtn');
-  btn.textContent = '📡 Acquisizione...';
-  btn.disabled = true;
-
+document.getElementById('addrIn2').addEventListener('keydown',e=>{if(e.key==='Enter')geocode2();});
+
+function usaGPS2(){
+  if(!navigator.geolocation){alert('GPS non disponibile.');return;}
+  const btn=document.getElementById('gpsBtn2');
+  btn.textContent='📡...'; btn.disabled=true;
   navigator.geolocation.getCurrentPosition(
-    pos => {
-      const lat = pos.coords.latitude.toFixed(6);
-      const lon = pos.coords.longitude.toFixed(6);
-      document.getElementById('latInput').value = lat;
-      document.getElementById('lonInput').value = lon;
-      document.getElementById('geocodeMsg').textContent =
-        `✓ GPS: precisione ±${Math.round(pos.coords.accuracy)} m`;
-      document.getElementById('geocodeMsg').style.color = '#15803d';
-      btn.textContent = '📡 GPS';
-      btn.disabled = false;
-      plotPoint();
+    pos=>{
+      document.getElementById('lat2').value=pos.coords.latitude.toFixed(6);
+      document.getElementById('lon2').value=pos.coords.longitude.toFixed(6);
+      document.getElementById('geoMsg2').textContent=`✓ GPS ±${Math.round(pos.coords.accuracy)} m`;
+      document.getElementById('geoMsg2').style.color='#15803d';
+      map.setView([pos.coords.latitude,pos.coords.longitude],15);
+      btn.textContent='📡 GPS'; btn.disabled=false;
     },
-    err => {
-      const msgs = {1:'Accesso GPS negato. Abilitare in Impostazioni.', 2:'GPS non disponibile.', 3:'Timeout GPS.'};
-      alert(msgs[err.code] || 'Errore GPS.');
-      btn.textContent = '📡 GPS';
-      btn.disabled = false;
-    },
-    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    err=>{alert('Errore GPS: '+err.message);btn.textContent='📡 GPS';btn.disabled=false;},
+    {enableHighAccuracy:true,timeout:15000,maximumAge:0}
   );
 }
 
+function aggiungiPunto2(){
+  const lat=parseFloat(document.getElementById('lat2').value);
+  const lon=parseFloat(document.getElementById('lon2').value);
+  if(isNaN(lat)||isNaN(lon)){alert('Inserire coordinate valide.');return;}
+  if(stato.punti.length>=6){alert('Massimo 6 punti.');return;}
+  const desc=document.getElementById('desc2').value||`Luogo ${stato.punti.length+1}`;
+  const colore=PT_COLORS[stato.punti.length%PT_COLORS.length];
+  stato.punti.push({lat,lon,desc,prob:stato.prob2,colore});
+
+  const icon=L.divIcon({
+    html:`<div style="background:${colore};color:white;width:24px;height:24px;border-radius:50%;
+          border:3px solid white;display:flex;align-items:center;justify-content:center;
+          font-size:11px;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.35)">${stato.punti.length}</div>`,
+    className:'',iconSize:[24,24],iconAnchor:[12,12]
+  });
+  const m=L.marker([lat,lon],{icon}).addTo(map)
+    .bindPopup(`<b>${desc}</b><br/>P.E.: ${PROB_LBL[stato.prob2]}`);
+  stato.mapLayers.push(m);
+
+  document.getElementById('lat2').value='';
+  document.getElementById('lon2').value='';
+  document.getElementById('desc2').value='';
+  document.getElementById('addrIn2').value='';
+  document.getElementById('geoMsg2').textContent='';
+  selProb2('alta');
+  renderPtList2();
+  if(stato.punti.length>1)
+    map.fitBounds(L.latLngBounds(stato.punti.map(p=>[p.lat,p.lon])).pad(.3));
+  else map.setView([lat,lon],13);
+}
+
+function renderPtList2(){
+  const el=document.getElementById('ptList2'); el.innerHTML='';
+  document.getElementById('ptCount2').textContent=stato.punti.length;
+  stato.punti.forEach((p,i)=>{
+    const div=document.createElement('div');
+    div.className='pt-item';
+    div.innerHTML=`<div class="pt-dot" style="background:${p.colore}">${i+1}</div>
+      <div style="flex:1;font-size:11px"><b>${p.desc}</b><br/>
+        <span style="color:var(--gm);font-size:10px">${p.lat.toFixed(4)},${p.lon.toFixed(4)} · 
+        <span style="font-weight:700">${PROB_LBL[p.prob]}</span></span></div>
+      <button class="pt-del" onclick="rimuoviPunto2(${i})">✕</button>`;
+    el.appendChild(div);
+  });
+}
+
+function rimuoviPunto2(i){
+  if(stato.mapLayers[i]){map.removeLayer(stato.mapLayers[i]);stato.mapLayers.splice(i,1);}
+  stato.punti.splice(i,1);
+  stato.mapLayers.forEach((ml,j)=>{
+    if(ml._icon){
+      ml._icon.querySelector('div').textContent=(j+1);
+      ml._icon.querySelector('div').style.background=PT_COLORS[j%PT_COLORS.length];
+    }
+  });
+  renderPtList2();
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// STEP 3 – CALCOLA BUFFER
+// ═══════════════════════════════════════════════════════════════════════
+function distanza(la1,lo1,la2,lo2){
+  const R=6371000,dLa=(la2-la1)*Math.PI/180,dLo=(lo2-lo1)*Math.PI/180;
+  const a=Math.sin(dLa/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function pulisciCerchi(){
+  stato.cerchi.forEach(c=>map.removeLayer(c));
+  stato.cerchi=[];
+}
+
+function goStep3(){
+  if(!stato.punti.length){alert('Aggiungere almeno un punto di esposizione.');return;}
+  pulisciCerchi();
+  const b=stato.sc.b;
+  const colBuf=[
+    {r:b.co,c:'#6d28d9',f:'#e9d5ff',o:.07},
+    {r:b.a, c:'#7c3aed',f:'#ede9fe',o:.10},
+    {r:b.l, c:'#15803d',f:'#bbf7d0',o:.13},
+    {r:b.e, c:'#0e7490',f:'#a5f3fc',o:.18},
+  ];
+  stato.punti.filter(p=>p.prob!=='bassa').forEach(pt=>{
+    colBuf.forEach(cb=>{
+      if(cb.r>0){
+        const c=L.circle([pt.lat,pt.lon],{radius:cb.r,color:cb.c,weight:1.5,fillColor:cb.f,fillOpacity:cb.o}).addTo(map);
+        stato.cerchi.push(c);
+      }
+    });
+  });
+  stato.punti.filter(p=>p.prob==='bassa').forEach(pt=>{
+    const c=L.circle([pt.lat,pt.lon],{radius:b.co,color:'#6d28d9',weight:1,fillColor:'#e9d5ff',fillOpacity:.04,dashArray:'5,5'}).addTo(map);
+    stato.cerchi.push(c);
+  });
+
+  // Calcola Comuni
+  const cMap={};
+  COMUNI.forEach(c=>{
+    let bestCat=null,minD=Infinity,ptRef=null;
+    stato.punti.forEach(pt=>{
+      const d=distanza(pt.lat,pt.lon,c.lat,c.lon);
+      const bPt=pt.prob==='bassa'?{e:0,l:0,a:0,co:b.co}:b;
+      let cat=null;
+      if(d<=bPt.e) cat='e';
+      else if(d<=bPt.l) cat='l';
+      else if(stato.sc.aobl&&bPt.a>0&&d<=bPt.a) cat='a';
+      else if(d<=bPt.co) cat='co';
+      if(cat){const prio={e:4,l:3,a:2,co:1};
+        if(!bestCat||prio[cat]>prio[bestCat]){bestCat=cat;minD=Math.round(d);ptRef=pt;}}
+    });
+    if(bestCat) cMap[c.nome]={...c,cat:bestCat,dist_m:minD,ptRef};
+  });
+  stato.comuniCoinvolti=Object.values(cMap).sort((a,b)=>a.dist_m-b.dist_m);
+
+  const catC={e:'#0e7490',l:'#15803d',a:'#7c3aed',co:'#b45309'};
+  stato.comuniCoinvolti.forEach(c=>{
+    const m=L.circleMarker([c.lat,c.lon],{radius:9,color:'white',fillColor:catC[c.cat],fillOpacity:1,weight:2})
+      .addTo(map).bindPopup(`<b>${c.nome}</b><br/>Buffer: ${catLbl(c.cat)}<br/>
+        Dist: ${c.dist_m>=1000?(c.dist_m/1000).toFixed(2)+' km':c.dist_m+' m'}<br/>
+        PEC: <small>${c.pec}</small>`);
+    stato.cerchi.push(m);
+  });
+
+  const allPts=[...stato.punti.map(p=>[p.lat,p.lon]),...stato.comuniCoinvolti.map(c=>[c.lat,c.lon])];
+  if(allPts.length) map.fitBounds(L.latLngBounds(allPts).pad(.1));
+
+  renderStep3();
+  goStep(3);
+}
+
+function catLbl(c){return{e:'Monitor. ento.',l:'Larvicida',a:'Adulticida',co:'Comunicazione Sindaco'}[c]||'';}
+function catCls(c){return{e:'tag-e',l:'tag-l',a:'tag-a',co:'tag-c'}[c]||'';}
+
+function renderStep3(){
+  const grp={e:[],l:[],a:[],co:[]};
+  stato.comuniCoinvolti.forEach(c=>grp[c.cat].push(c));
+
+  // Tab Comuni
+  let h='';
+  [{k:'e',lbl:'Monitoraggio entomologico'},{k:'l',lbl:'Buffer larvicida'},
+   {k:'a',lbl:'Buffer adulticida'},{k:'co',lbl:'Comunicazione Sindaco'}].forEach(sp=>{
+    if(!grp[sp.k].length) return;
+    h+=`<div style="margin-bottom:8px"><div style="font-size:10px;font-weight:700;margin-bottom:4px">${sp.lbl}</div>`;
+    grp[sp.k].forEach(c=>{
+      const d=c.dist_m>=1000?(c.dist_m/1000).toFixed(2)+' km':c.dist_m+' m';
+      h+=`<span class="c-tag ${catCls(c.cat)}">${c.nome} (${d})</span>`;
+    });
+    h+='</div>';
+  });
+  if(stato.comuniCoinvolti.length){
+    h+=`<table style="width:100%;border-collapse:collapse;font-size:10px;margin-top:6px">
+      <tr style="background:#f3f4f6"><th style="padding:3px">Comune</th><th style="padding:3px">PEC</th><th>Dist.</th></tr>`;
+    stato.comuniCoinvolti.forEach(c=>{
+      const d=c.dist_m>=1000?(c.dist_m/1000).toFixed(2)+' km':c.dist_m+' m';
+      h+=`<tr style="border-bottom:1px solid #f3f4f6">
+        <td style="padding:3px;font-weight:600">${c.nome}</td>
+        <td style="padding:3px;font-size:9px;color:var(--bm)">${c.pec}</td>
+        <td style="padding:3px;text-align:center">${d}</td></tr>`;
+    });
+    h+='</table>';
+  }
+  document.getElementById('t3comuni').innerHTML=h||'<p style="font-size:12px;color:var(--gm)">Nessun comune nell\'area dei buffer.</p>';
+
+  // Tab Adempimenti
+  const esposti=stato.comuniCoinvolti.filter(c=>['e','l','a'].includes(c.cat)).map(c=>c.nome);
+  const allerta=stato.comuniCoinvolti.filter(c=>c.cat==='co').map(c=>c.nome);
+  let ha='<div style="font-size:10px;font-weight:700;color:#991b1b;margin-bottom:5px">⏱ URGENTI (entro 24h)</div>';
+  ['Notifica PREMAL (D.M. 7/3/2022) + portale ISS arbo entro 24h',
+   'Trasmissione scheda All.9 PNA a OER Sardegna (san.oer@regione.sardegna.it)',
+   'Comunicazione al Servizio Veterinario ASL – indagine congiunta entro 24h',
+   'Sollecito campioni Lab. Reg. AOU Cagliari (laboratorio@aoucagliari.it)']
+    .forEach(a=>ha+=`<div class="adm urg">• ${a}</div>`);
+  ha+='<div style="font-size:10px;font-weight:700;color:var(--bm);margin:8px 0 5px">📋 STANDARD</div>';
+  if(esposti.length) ha+=`<div class="adm std">• Lettera operativa ai Sindaci: ${esposti.join(', ')}${stato.sc.aobl?' – adulticidi OBBLIGATORI':''}</div>`;
+  if(allerta.length) ha+=`<div class="adm std">• Comunicazione precauzionale ai Sindaci: ${allerta.join(', ')}</div>`;
+  if(stato.sc.ord) ha+=`<div class="adm std">• Proposta ORDINANZA CONTINGIBILE ai Sindaci: ${esposti.join(', ')}</div>`;
+  ha+=`<div class="adm std">• Comunicazione a Struttura Reg. Trasfusionale e CRT Sardegna</div>`;
+  ha+=`<div class="adm std">• Aggiornamento a 30 giorni (PREMAL + portale ISS + OER)</div>`;
+  document.getElementById('t3adempimenti').innerHTML=ha;
+
+  // Tab Buffer
+  const b=stato.sc.b;
+  let hb='';
+  [{r:b.e,lbl:'Monitor. entomologico',c:'#0e7490'},{r:b.l,lbl:'Larvicida',c:'#15803d'},
+   {r:b.a,lbl:'Adulticida',c:'#7c3aed'},{r:b.co,lbl:'Comunicazione Sindaci',c:'#6d28d9'}]
+    .forEach(x=>{
+    const dim=x.r===0?'NON indicato':x.r>=1000?(x.r/1000).toFixed(1)+' km':x.r+' m';
+    hb+=`<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;
+           background:white;border:1px solid ${x.r?x.c:'#e5e7eb'};border-radius:6px;margin-bottom:5px">
+      <div style="width:12px;height:12px;border-radius:50%;background:${x.r?x.c:'#d1d5db'};flex-shrink:0"></div>
+      <div style="flex:1;font-size:11px;font-weight:700;color:${x.r?x.c:'#9ca3af'}">${x.lbl}</div>
+      <div style="font-size:12px;font-weight:800;color:${x.r?x.c:'#9ca3af'}">${dim}</div>
+    </div>`;
+  });
+  document.getElementById('t3buffer').innerHTML=hb;
+
+  // Note
+  const notes={
+    pool:"Pool zanzare: buffer dal sito della trappola. Adulticidi NON indicati.",
+    uccello:"Uccello morto: buffer dal sito di ritrovamento. Adulticidi NON indicati.",
+    equide:"Equide: buffer dalla sede dell'allevamento. Competenza primaria Veterinario.",
+    febbre:"Caso umano: buffer dal luogo di ESPOSIZIONE (non dalla residenza). Adulticidi su valutazione SISP.",
+    neuro:"Caso neuroinvasivo: adulticidi OBBLIGATORI. Proporre ordinanza contingibile.",
+    cluster:"Cluster: area tra abitazioni più esterne. Coordinamento regionale se intercomunale.",
+  };
+  document.getElementById('t3note').textContent='⚑ '+notes[stato.sc.id];
+
+  // Prepara lista comunicazioni per Step 4
+  preparaListaComunicazioni();
+}
+
+function sw3(t){
+  ['comuni','adempimenti','buffer'].forEach(x=>{
+    document.getElementById('t3'+x).style.display=x===t?'block':'none';
+  });
+  document.querySelectorAll('.tab').forEach((b,i)=>{
+    b.classList.toggle('active',['comuni','adempimenti','buffer'][i]===t);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// STEP 4 – GENERA PDF
+// ═══════════════════════════════════════════════════════════════════════
+let comunicazioni=[];
+
+function preparaListaComunicazioni(){
+  const codice=document.getElementById('f_codice').value||'[Cod. SISP]';
+  const agente=document.getElementById('f_agente').value||'WNV';
+  const esposti=stato.comuniCoinvolti.filter(c=>['e','l','a'].includes(c.cat));
+  const allerta=stato.comuniCoinvolti.filter(c=>c.cat==='co');
+
+  comunicazioni=[
+    {id:'iss',    icon:'🏛',nome:'ISS arbo + PREMAL',         dest:'Istituto Superiore di Sanità / Min. Salute',urgente:true},
+    {id:'oer',    icon:'📊',nome:'OER Sardegna',              dest:'san.oer@regione.sardegna.it',urgente:true},
+    {id:'vet',    icon:'🐾',nome:'Servizio Veterinario ASL',  dest:'Dipartimento di Prevenzione – Area Veterinaria',urgente:true},
+    {id:'lab',    icon:'🔬',nome:'Lab. Reg. AOU Cagliari',    dest:'laboratorio@aoucagliari.it',urgente:true},
+    {id:'trasp',  icon:'🩸',nome:'Struttura Reg. Trasfusionale',dest:'assessorato.sanita@pec.regione.sardegna.it',urgente:false},
+    {id:'crt',    icon:'🫀',nome:'Centro Reg. Trapianti',     dest:'crt.sardegna@aslcagliari.it',urgente:false},
+    ...esposti.map(c=>({id:'sind_'+c.nome,icon:'🏛',nome:'Sindaco – '+c.nome,
+      dest:c.pec,urgente:true,comune:c,tipo:'esposizione'})),
+    ...allerta.map(c=>({id:'sind_all_'+c.nome,icon:'📢',nome:'Allerta Sindaco – '+c.nome,
+      dest:c.pec,urgente:false,comune:c,tipo:'allerta'})),
+  ];
+
+  let h='';
+  comunicazioni.forEach(cm=>{
+    h+=`<div class="comm-item">
+      <div class="comm-icon">${cm.icon}</div>
+      <div class="comm-info">
+        <div class="comm-nome">${cm.nome}</div>
+        <div class="comm-dest">${cm.dest}</div>
+        ${cm.urgente?'<span class="badge badge-err" style="margin-top:2px">URGENTE</span>':''}
+      </div>
+      <button class="comm-btn" onclick="generaPDF('${cm.id}')">PDF</button>
+    </div>`;
+  });
+  document.getElementById('commList').innerHTML=h;
+}
+
+function getDataOra(){
+  return new Date().toLocaleString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric',
+    hour:'2-digit',minute:'2-digit'}).replace(',','');
+}
+function getDataDoc(){
+  return new Date().toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'});
+}
+
+function creaLettreraPDF(titolo, oggetto, destinatario, corpo, allegati=''){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  const W=210,H=297;
+
+  // Carta intestata
+  const imgData='data:image/jpeg;base64,'+LETTERHEAD_B64;
+  doc.addImage(imgData,'JPEG',10,8,W-20,45);
+
+  // Separatore
+  doc.setDrawColor(26,58,92);
+  doc.setLineWidth(0.4);
+  doc.line(15,56,W-15,56);
+
+  // Destinatario (dx)
+  let y=62;
+  doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(55,65,81);
+  destinatario.split('\n').forEach(l=>{ doc.text(l,W-15,y,{align:'right'}); y+=5; });
+
+  // Prot e data
+  y+=4;
+  doc.setFontSize(9); doc.setFont('helvetica','normal');
+  const codice=document.getElementById('f_codice').value||'[Prot. n. ___/2025]';
+  doc.text(`${codice.includes('Prot')?codice:'Prot. n. '+codice+'/2025'}     Sanluri, ${getDataDoc()}`,15,y);
+  y+=8;
+
+  // Oggetto
+  doc.setFont('helvetica','bold'); doc.setFontSize(9);
+  const oggettoLines=doc.splitTextToSize('OGGETTO: '+oggetto,W-30);
+  doc.text(oggettoLines,15,y);
+  y+=oggettoLines.length*5+2;
+
+  // Linea
+  doc.setDrawColor(180,183,186); doc.setLineWidth(0.2);
+  doc.line(15,y,W-15,y); y+=6;
+
+  // Corpo
+  doc.setFont('helvetica','normal'); doc.setFontSize(9.5); doc.setTextColor(55,65,81);
+  corpo.forEach(paragrafo=>{
+    const lines=doc.splitTextToSize(paragrafo,W-30);
+    lines.forEach(l=>{
+      if(y>H-35){doc.addPage();y=25;}
+      doc.text(l,15,y); y+=5;
+    });
+    y+=3;
+  });
+
+  // Firma
+  y=Math.max(y+10,H-55);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9);
+  doc.text('Il Responsabile del Servizio di Igiene e Sanità Pubblica',15,y); y+=5;
+  doc.text('ASL Mediocampidano',15,y); y+=5;
+  doc.setFont('helvetica','bold');
+  doc.text('[Dott./Dott.ssa Nome Cognome]',15,y); y+=5;
+  doc.setFont('helvetica','normal');
+  doc.text('Data: ________________________     Firma: ________________________',15,y);
+
+  // Allegati
+  if(allegati){
+    y+=10;
+    doc.setFontSize(8); doc.setTextColor(107,114,128);
+    const alLines=doc.splitTextToSize('Allegati: '+allegati,W-30);
+    doc.text(alLines,15,y);
+  }
+
+  // Footer
+  doc.setFontSize(7); doc.setTextColor(156,163,175);
+  doc.text('SISP – ASL Mediocampidano | PNA 2020-2025 | Piano Reg. WND/USUTU agg. 2026 | D.M. 7/3/2022 (PREMAL)',
+    W/2,H-8,{align:'center'});
+
+  return doc;
+}
+
+function generaPDF(id){
+  const cm=comunicazioni.find(c=>c.id===id);
+  if(!cm){alert('Comunicazione non trovata.');return;}
+  const agente=document.getElementById('f_agente').value||'WNV';
+  const classif=document.getElementById('f_classificazione').value||'Caso confermato';
+  const esordio=document.getElementById('f_dataesordio').value||'[data]';
+  const segnal=document.getElementById('f_dataseg').value||'[data]';
+  const clinica=document.getElementById('f_clinica').value||'[manifestazione clinica]';
+  const codice=document.getElementById('f_codice').value||'[codice SISP]';
+  const labTxt=document.getElementById('f_lab').value||'IgM positivo su siero';
+  const ptDesc=stato.punti.map(p=>`${p.desc} (P.E. ${PROB_LBL[p.prob]})`).join('; ')||'[luogo esposizione]';
+  const ptComuni=[...new Set(stato.punti.map(p=>{
+    const addr=document.getElementById('addrIn2')?.value||'';
+    return p.desc;
+  }))].join(', ');
+
+  let doc;
+  const nomeFile=(n)=>`WNV_${codice}_${n}_${new Date().toISOString().slice(0,10)}.pdf`;
+
+  if(id==='iss'){
+    doc=creaLettreraPDF('ISS arbo + PREMAL',
+      `Segnalazione caso umano di infezione da ${agente} – ${classif} – Notifica PNA 2020-2025 Allegato 9`,
+      'Istituto Superiore di Sanità\nDip. Malattie Infettive\nSorveglianza Arbovirosi\nsorveglianza.arbovirosi@iss.it\np.c. Ministero della Salute – malinf@sanita.it',
+      [
+        `Il Servizio di Igiene e Sanità Pubblica (SISP) della ASL Mediocampidano trasmette la segnalazione di un caso umano di infezione da ${agente}, classificato come ${classif}, ai sensi dell'Allegato 9 del Piano Nazionale di prevenzione, sorveglianza e risposta alle Arbovirosi (PNA 2020-2025), prorogato al 31/12/2026 con Atto CSR n. 245 del 18/12/2025.`,
+        `La segnalazione è pervenuta a questo Servizio in data ${segnal}. La scheda di segnalazione (Allegato 9 PNA) è stata contestualmente inserita sul portale https://www.iss.it/site/rmi/arbo/ e sul sistema PREMAL (D.M. 7/3/2022).`,
+        `Dati essenziali del caso (de-identificati – Reg. UE 679/2016): Agente: ${agente} | Data esordio sintomi: ${esordio} | Classificazione: ${classif} | Manifestazione clinica: ${clinica} | Luogo di più probabile esposizione: ${ptDesc} (autoctono) | Esame laboratoristico: ${labTxt} | Esito: ${document.getElementById('f_esito').value||'In miglioramento'}`,
+        `Si trasmette in allegato la scheda di segnalazione compilata. Si provvederà all'aggiornamento del caso a 30 giorni dall'esordio sintomatologico, conformemente al Piano regionale di sorveglianza WND/USUTU – aggiornamento 2026 (Det. n. 352 del 25.03.2026).`,
+        'Si resta a disposizione per ogni ulteriore necessità di approfondimento o integrazione dei dati.',
+      ],
+      'Scheda segnalazione Allegato 9 PNA (dati de-identificati)');
+    doc.save(nomeFile('ISS_arbo'));
+  }
+  else if(id==='oer'){
+    doc=creaLettreraPDF('OER Sardegna',
+      `Segnalazione caso umano di infezione da ${agente} – ${classif} – Trasmissione scheda Allegato 9 PNA`,
+      'Osservatorio Epidemiologico Regionale\nRegione Sardegna – Assessorato Igiene e Sanità\nsan.oer@regione.sardegna.it',
+      [
+        `Il SISP della ASL Mediocampidano trasmette al competente Osservatorio Epidemiologico Regionale la segnalazione di un caso umano di infezione da ${agente}, classificato come ${classif}, ai sensi del Piano regionale di sorveglianza WND/USUTU – aggiornamento 2026 (Det. n. 352 del 25.03.2026) e del PNA 2020-2025.`,
+        `La segnalazione è pervenuta in data ${segnal}. Il caso è stato inserito sul portale ISS arbo e sul sistema PREMAL. Dati essenziali: Agente: ${agente} | Data esordio: ${esordio} | Classificazione: ${classif} | Luogo esposizione: ${ptDesc} | Esame: ${labTxt}`,
+        `Si allega la scheda Allegato 9 PNA in forma de-identificata. Si provvederà all'aggiornamento a 30 giorni. Sono state attivate le misure di coordinamento previste dal Piano regionale, inclusa la comunicazione al Servizio Veterinario ASL e ai Servizi trasfusionale e trapiantologico.`,
+      ],
+      'Scheda segnalazione Allegato 9 PNA');
+    doc.save(nomeFile('OER_Sardegna'));
+  }
+  else if(id==='vet'){
+    doc=creaLettreraPDF('Servizio Veterinario ASL',
+      `Caso umano confermato di infezione da ${agente} – Richiesta attivazione indagine epidemiologica congiunta e campionamento entomologico – URGENTE entro 24 ore`,
+      'Servizio Veterinario di Sanità Animale\nASL Mediocampidano\nDipartimento di Prevenzione – Area Veterinaria\nCOMUNICAZIONE URGENTE – USO INTERNO',
+      [
+        `Con carattere di urgenza, si comunica che in data ${segnal} è pervenuta a questo SISP la segnalazione di un caso umano di infezione da ${agente}, classificato come ${classif}, con luogo di più probabile esposizione: ${ptDesc}.`,
+        `Ai sensi del Piano regionale di sorveglianza WND/USUTU – aggiornamento 2026 (Det. n. 352/25.03.2026) e della Circolare Min. Salute prot. n. 17581 del 07/06/2023, si richiede l'attivazione entro 24 ore dalla presente di: avvio dell'indagine epidemiologica congiunta SISP-Servizio Veterinario coordinata con IZS Sardegna; campionamento entomologico nell'area di più probabile esposizione; attivazione della sorveglianza sull'avifauna stanziale e sugli equini sentinella nell'area.`,
+        `Si prega di confermare ricezione e di comunicare i referenti incaricati per il coordinamento operativo.`,
+      ]);
+    doc.save(nomeFile('Veterinario_ASL'));
+  }
+  else if(id==='lab'){
+    doc=creaLettreraPDF('Lab. Regionale AOU Cagliari',
+      `Caso umano di infezione da ${agente} – Sollecito conferma campione biologico e trasmissione esiti`,
+      'Laboratorio Regionale di Riferimento per le Arbovirosi\nc/o AOU Cagliari – P.O. Duilio Casula\nlaboratorio@aoucagliari.it\nTel. 07051096472',
+      [
+        `Il SISP della ASL Mediocampidano comunica l'identificazione di un caso umano di infezione da ${agente} (${classif}), con esordio sintomatologico in data ${esordio}. Dati laboratoristici disponibili: ${labTxt}.`,
+        `Si richiede di procedere con la massima tempestività ai test di conferma (siero-neutralizzazione), trasmettere gli esiti a questo SISP, inviare il campione positivo al Laboratorio Nazionale ISS (arbo.mipi@iss.it) per conferma e sequenziamento, comunicare il codice PREMAL per il coordinamento dei flussi.`,
+        `Si ricorda che il Piano regionale prevede la conservazione dei campioni anche in caso di negatività.`,
+      ]);
+    doc.save(nomeFile('Lab_AOU_Cagliari'));
+  }
+  else if(id==='trasp'){
+    doc=creaLettreraPDF('Struttura Reg. Trasfusionale',
+      `Segnalazione caso umano confermato di infezione da ${agente} – Misure di sicurezza su sangue/emocomponenti`,
+      'Struttura Regionale di Coordinamento\nper le Attività Trasfusionali – Regione Sardegna\nassessorato.sanita@pec.regione.sardegna.it',
+      [
+        `Il SISP della ASL Mediocampidano comunica l'identificazione di un caso umano di infezione da ${agente} (${classif}), con luogo di esposizione: ${ptDesc}.`,
+        `La presente comunicazione è effettuata ai sensi del Piano regionale di sorveglianza WND/USUTU – aggiornamento 2026 (Det. n. 352/25.03.2026) per consentire l'attivazione delle misure di prevenzione per la sicurezza delle donazioni di sangue/emocomponenti nell'area coinvolta.`,
+        `Si invita codesta Struttura ad adottare le misure previste dalla normativa vigente (D.Lgs. 261/2007 e s.m.i.). Si assicura aggiornamento tempestivo sull'evoluzione del caso.`,
+      ]);
+    doc.save(nomeFile('Struttura_Trasfusionale'));
+  }
+  else if(id==='crt'){
+    doc=creaLettreraPDF('Centro Reg. Trapianti',
+      `Segnalazione caso umano confermato di infezione da ${agente} – Misure di sicurezza su organi/tessuti/cellule`,
+      'Centro Regionale Trapianti – Sardegna\nASL Cagliari – P.O. Binaghi\ncrt.sardegna@aslcagliari.it\np.c. CORT: cort.crtsardegna@aslcagliari.it',
+      [
+        `Il SISP della ASL Mediocampidano comunica l'identificazione di un caso umano di infezione da ${agente} (${classif}), con luogo di esposizione: ${ptDesc}.`,
+        `La comunicazione è effettuata ai sensi del Piano regionale di sorveglianza WND/USUTU – aggiornamento 2026 per consentire l'attivazione delle misure di prevenzione per la sicurezza dei trapianti di organi, tessuti e cellule nell'area coinvolta (D.Lgs. 191/2007 – D.Lgs. 16/2010).`,
+        `Si assicura aggiornamento tempestivo sull'evoluzione del caso e sull'esito degli esami di conferma del Laboratorio Nazionale ISS.`,
+      ]);
+    doc.save(nomeFile('CRT_Sardegna'));
+  }
+  else if(cm.comune){
+    const c=cm.comune;
+    const isEsp=cm.tipo==='esposizione';
+    const d=c.dist_m>=1000?(c.dist_m/1000).toFixed(2)+' km':c.dist_m+' m';
+    if(isEsp){
+      const isNeuro=stato.sc.id==='neuro'||stato.sc.id==='cluster';
+      doc=creaLettreraPDF(`Sindaco – ${c.nome}`,
+        `Identificazione caso umano confermato di infezione da ${agente} – ${classif} – Richiesta${isNeuro?' URGENTE ':' '}adozione misure di controllo vettoriale – Comune di ${c.nome}`,
+        `Al Sindaco del Comune di ${c.nome}\nProvincia del Medio Campidano\n${c.pec}\n${isNeuro?'\nCOMUNICAZIONE URGENTE':''}`,
+        [
+          `Il Servizio di Igiene e Sanità Pubblica (SISP) della ASL Mediocampidano comunica a codesta Amministrazione che in data ${segnal} è stato identificato e confermato un caso umano di infezione da ${agente} (${classif}), con luogo di più probabile esposizione nel Comune di ${c.nome} (${ptDesc}), nella finestra temporale antecedente l'esordio sintomatologico del ${esordio}.`,
+          `Nella qualità di Autorità sanitaria locale ai sensi dell'art. 32 della L. 833/1978 e dell'art. 50 del D.Lgs. 267/2000 (TUEL), si richiede a codesta Amministrazione di adottare con urgenza le seguenti misure di prevenzione e controllo del vettore${isNeuro?', mediante emanazione di apposita ordinanza contingibile e urgente ai sensi dell'art. 54 del D.Lgs. 267/2000':''}:`,
+          `TRATTAMENTI LARVICIDI (obbligatori): trattamento immediato di tutte le caditoie stradali e pluviali nel raggio di almeno ${stato.sc.b.l>=1000?(stato.sc.b.l/1000).toFixed(1)+' km':stato.sc.b.l+' m'} dall'area di esposizione. Principi attivi: Bacillus thuringiensis israelensis (Bti) o Bacillus sphaericus (formulati autorizzati Reg. UE 528/2012, Allegato 3 PNA). Cadenza: ogni 3 settimane fino al 31 ottobre 2025.`,
+          stato.sc.aobl||stato.sc.id==='febbre'?`TRATTAMENTI ADULTICIDI${stato.sc.aobl?' (obbligatori)':' (valutazione SISP)'}: trattamento delle aree verdi pubbliche limitrofe all'area di esposizione nelle ore serali (21:00-02:00). Principi attivi autorizzati: Deltametrina o Cipermetrina. Esclusivamente ditte autorizzate. Cadenza settimanale.`:'TRATTAMENTI ADULTICIDI: non indicati in questa fase.',
+          `Si richiede altresì di attivare una campagna informativa alla cittadinanza (protezione individuale, eliminazione acque stagnanti nelle proprietà private, uso di repellenti nelle ore serali). Si richiede di comunicare a questo SISP, entro 48 ore, gli interventi attivati e le relative tempistiche (Prot. risposta a: ${codice}).`,
+        ],
+        'Informativa per la popolazione (bozza) | Elenco principi attivi autorizzati (All. 3 PNA)');
+    } else {
+      doc=creaLettreraPDF(`Allerta Sindaco – ${c.nome}`,
+        `Comunicazione precauzionale – Circolazione West Nile Virus (${agente}) nell'area limitrofa – Raccomandazioni per il controllo vettoriale`,
+        `Al Sindaco del Comune di ${c.nome}\nProvincia del Medio Campidano\n${c.pec}`,
+        [
+          `Il SISP della ASL Mediocampidano comunica a codesta Amministrazione che in data ${segnal} è stata identificata, in area limitrofa al territorio di ${c.nome} (distanza stimata: ${d}), positività per ${agente} nel contesto della sorveglianza arbovirosi stagione 2025.`,
+          `In via precauzionale, si raccomanda a codesta Amministrazione di intensificare i trattamenti larvicidi ordinari sulle caditoie stradali e nelle aree con ristagni idrici, e di sensibilizzare la cittadinanza all'adozione di misure di protezione individuale nelle ore serali.`,
+          `Si invita a segnalare a questo SISP eventuali casi di malattia febbrile con sintomi compatibili (febbre, cefalea, mialgie) osservati nella popolazione, e il ritrovamento di uccelli selvatici morti nell'area.`,
+        ]);
+    }
+    doc.save(nomeFile(`Sindaco_${c.nome.replace(/\s/g,'_')}`));
+  }
+}
+
+async function generaTutti(){
+  const btn=document.getElementById('btnGenAll');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Generazione...';
+  document.getElementById('genProgress').style.display='block';
+
+  for(let i=0;i<comunicazioni.length;i++){
+    const cm=comunicazioni[i];
+    document.getElementById('genMsg').textContent=`Generazione: ${cm.nome} (${i+1}/${comunicazioni.length})`;
+    document.getElementById('genBar').style.width=((i+1)/comunicazioni.length*100)+'%';
+    await new Promise(r=>setTimeout(r,200));
+    generaPDF(cm.id);
+  }
+  document.getElementById('genMsg').textContent=`✅ Tutti i ${comunicazioni.length} PDF generati con successo`;
+  document.getElementById('genMsg').className='info info-green';
+  btn.disabled=false; btn.innerHTML='📄 Genera tutti i PDF';
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// RESET
+// ═══════════════════════════════════════════════════════════════════════
+function resetTutto(){
+  stato.mapLayers.forEach(m=>map.removeLayer(m));
+  stato.cerchi.forEach(c=>map.removeLayer(c));
+  stato.punti=[]; stato.mapLayers=[]; stato.cerchi=[]; stato.comuniCoinvolti=[];
+  stato.sc=SCENARI[3]; stato.datiCaso={};
+  ['f_codice','f_dataseg','f_dataesordio','f_residenza','f_clinica','f_lab',
+   'lat2','lon2','desc2','addrIn2'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('ptList2').innerHTML='';
+  document.getElementById('ptCount2').textContent='0';
+  document.getElementById('extractedPreview').innerHTML='';
+  document.getElementById('commList').innerHTML='';
+  document.getElementById('genProgress').style.display='none';
+  const zone=document.getElementById('uploadZone');
+  zone.classList.remove('loading','drag');
+  document.getElementById('uploadIcon').textContent='📄';
+  document.getElementById('uploadTitle').textContent='Trascina qui il PDF';
+  document.getElementById('uploadSub').textContent='oppure clicca per selezionare il file';
+  document.getElementById('uploadProgress').style.display='none';
+  document.getElementById('progressBar').style.width='0%';
+  renderScenarioBtns();
+  selProb2('alta');
+  map.setView([39.58,8.87],10);
+  goStep(1);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// PWA
+// ═══════════════════════════════════════════════════════════════════════
+if('serviceWorker' in navigator)
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+window.addEventListener('online', ()=>document.getElementById('offlineBanner').style.display='none');
+window.addEventListener('offline',()=>document.getElementById('offlineBanner').style.display='block');
 </script>
 </body>
 </html>
